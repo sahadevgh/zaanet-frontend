@@ -21,6 +21,7 @@ import { toast } from "@/hooks/use-toast";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import Image from "next/image";
+import Layout from "../Layout";
 
 const hostSchema = z.object({
   ssid: z.string().min(3, "Network name is required"),
@@ -158,6 +159,7 @@ export default function BecomeAHostPage() {
   }
 
   return (
+    <Layout >
     <div className="container max-w-2xl py-12 px-4 mx-auto">
       <div className="flex flex-col items-center mb-8">
         <div className="bg-zaanet-purple/10 rounded-full p-6 animate-scale-in">
@@ -384,5 +386,6 @@ export default function BecomeAHostPage() {
         />
       </div>
     </div>
+    </Layout>
   );
 }

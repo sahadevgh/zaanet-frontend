@@ -1,9 +1,17 @@
-
+"use client";
 import React from 'react';
-import { Button } from "@/components/ui/button";
 import Link from 'next/link';
+import { ConnectBtn } from '../web3/Web3Provider';
+import { emojiAvatarForAddress } from '../web3/emojiAvatarForAddress';
+import { useAccount } from 'wagmi';
+import { usePathname } from 'next/navigation';
 
 const Header: React.FC = () => {
+  const pathname = usePathname()
+  const { address, isConnected } = useAccount();
+  const { color: backgroundColor, emoji } = emojiAvatarForAddress(address ?? '');
+
+
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
       <div className="container mx-auto flex justify-between items-center py-4">
@@ -26,9 +34,12 @@ const Header: React.FC = () => {
         </nav>
         
         <div className="flex items-center space-x-4">
-          <Button variant="outline" className="bg-transparent border-zaanet-purple text-zaanet-purple hover:bg-zaanet-purple hover:text-white">
-            Connect Wallet
-          </Button>
+        <ConnectBtn
+              backgroundColor={backgroundColor}
+              emoji={emoji}
+              isConnected={isConnected}
+              address={address}
+            />
           
           <button className="md:hidden text-gray-700 p-2" title="Open menu">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

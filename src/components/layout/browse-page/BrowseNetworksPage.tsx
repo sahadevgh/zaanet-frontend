@@ -17,6 +17,7 @@ const mockNetworks: WifiNetwork[] = [
     speed: 25,
     price: "1.00",
     hostWallet: "0xA1FA...456C",
+    password: "zaanet123",
   },
   {
     id: "2",
@@ -25,6 +26,7 @@ const mockNetworks: WifiNetwork[] = [
     speed: 50,
     price: "1.50",
     hostWallet: "0xC4F6...9B21",
+    password: "zaanet123",
   },
   {
     id: "3",
@@ -33,6 +35,7 @@ const mockNetworks: WifiNetwork[] = [
     speed: 10,
     price: "0.75",
     hostWallet: "0xB888...ABCD",
+    password: "zaanet123",
   },
 ];
 
@@ -81,7 +84,7 @@ export default function BrowseNetworksPage() {
   }, [viewMode, filteredNetworks]);
 
   return (
-    <div className="container max-w-6xl mx-auto py-12 px-4 sm:px-6">
+    <div className="container min-h-screen max-w-6xl mx-auto py-12 px-4 sm:px-6">
       <h1 className="text-3xl font-bold mb-4 text-zaanet-purple">Browse WiFi Networks</h1>
       <p className="text-gray-900 mb-8">
         Find affordable, nearby WiFi hotspots and connect with crypto. All payments are secure and instant.{" "}

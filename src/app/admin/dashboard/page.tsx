@@ -6,9 +6,7 @@ import Footer from '@/components/layout/Footer'
 function page() {
   return (
     <div>
-        <Header />
         <AdminDashboard />
-        <Footer />
     </div>
   )
 }

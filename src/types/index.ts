@@ -13,7 +13,7 @@ export type WifiNetwork = {
   speed: number;
   price: string;
   hostWallet: string;
-  password: string; // Added password property
+  password: string;
 };
 
 export interface Session {
