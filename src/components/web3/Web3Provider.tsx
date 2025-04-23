@@ -14,7 +14,7 @@ import { ConnectButton } from './ConnectButton'
 import { LoadingSpinner } from '@/lib/LoadingSpinner'
 import DropdownMenu from '../layout/DropdownMenu'
 
-type UserType = 'user' | 'premium' | 'anopro' | 'admin'
+type UserType = 'guest' | 'host' | 'admin'
 
 interface ConnectBtnProps {
   backgroundColor?: string
@@ -36,7 +36,7 @@ export const ConnectBtn = ({
   const { isConnecting, chain } = useAccount()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const isMounted = useRef(false)
-  const [userType, setUserType] = useState<UserType>('user')
+  const [userType, setUserType] = useState<UserType>('guest')
 
   useEffect(() => {
     isMounted.current = true
@@ -109,7 +109,7 @@ export const ConnectBtn = ({
       </Button>
     )
   }
-
+ 
   return (
     <div className="relative">
       <motion.div
