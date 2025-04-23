@@ -4,10 +4,8 @@ import Link from 'next/link';
 import { ConnectBtn } from '../web3/Web3Provider';
 import { emojiAvatarForAddress } from '../web3/emojiAvatarForAddress';
 import { useAccount } from 'wagmi';
-import { usePathname } from 'next/navigation';
 
 const Header: React.FC = () => {
-  const pathname = usePathname()
   const { address, isConnected } = useAccount();
   const { color: backgroundColor, emoji } = emojiAvatarForAddress(address ?? '');
 

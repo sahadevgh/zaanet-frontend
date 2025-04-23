@@ -14,7 +14,6 @@ import { ConnectButton } from './ConnectButton'
 import { LoadingSpinner } from '@/lib/LoadingSpinner'
 import DropdownMenu from '../layout/DropdownMenu'
 
-type UserType = 'guest' | 'host' | 'admin'
 
 interface ConnectBtnProps {
   backgroundColor?: string
@@ -27,7 +26,6 @@ export const ConnectBtn = ({
   backgroundColor,
   emoji = '👤',
   isConnected,
-  address,
 }: ConnectBtnProps) => {
   const { openConnectModal } = useConnectModal()
   const { openAccountModal } = useAccountModal()
@@ -35,8 +33,10 @@ export const ConnectBtn = ({
   const { disconnect } = useDisconnect()
   const { isConnecting, chain } = useAccount()
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const isMounted = useRef(false)
-  const [userType, setUserType] = useState<UserType>('guest')
+  const isMounted = useRef(false);
+
+  
+  const userType = 'guest'
 
   useEffect(() => {
     isMounted.current = true
