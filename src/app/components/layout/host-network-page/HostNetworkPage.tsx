@@ -70,46 +70,6 @@ export default function HostNetworkPage() {
   });
   const [roleType, setRoleType] = useState("guest");
 
-  // Initialize Leaflet map
-  // useEffect(() => {
-  //   const map = L.map("host-map").setView([5.6037, -0.187], 12);
-  //   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  //     attribution:
-  //       '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  //   }).addTo(map);
-
-  //   const marker = L.marker([5.6037, -0.187]).addTo(map);
-  //   map.on("click", async (e) => {
-  //     const { lat, lng } = e.latlng;
-  //     marker.setLatLng([lat, lng]);
-  //     form.setValue("location.lat", lat);
-  //     form.setValue("location.lng", lng);
-
-  //     // Reverse geocoding with Nominatim
-  //     try {
-  //       const response = await fetch(
-  //         `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
-  //       );
-  //       const data = await response.json();
-  //       form.setValue("location.city", data.address.city || "Unknown");
-  //       form.setValue("location.country", data.address.country || "Unknown");
-  //       form.setValue("location.area", data.address.suburb || "Unknown");
-  //     } catch (error) {
-  //       console.error("Geocoding error:", error);
-  //       toast({
-  //         title: "Error",
-  //         description:
-  //           "Failed to fetch location details. Please enter manually.",
-  //         variant: "destructive",
-  //       });
-  //     }
-  //   });
-
-  //   return () => {
-  //     map.remove();
-  //   };
-  // }, [form]);
-
   // Load Ethereum contract
   useEffect(() => {
     async function initializeContract() {
@@ -162,15 +122,27 @@ export default function HostNetworkPage() {
       }
 
       // Encrypt password
-      const secretKey = process.env.NEXT_PUBLIC_ENCRYPTION_KEY!;
+      const secretKey = process.env.NEXT_PUBLIC_CRYPTOJS_SECRET_KEY!;
+      if (!secretKey) {
+        throw new Error("Encryption key not set in environment");
+      }
       const password = form.getValues().password;
-      const encryptedPassword = CryptoJS.AES.encrypt(
-        password,
-        secretKey
-      ).toString();
+      console.log("Host - Password:", password);
+      console.log("Host - Secret Key:", secretKey);
+      const encryptedPassword = CryptoJS.AES.encrypt(password, secretKey).toString();
+      console.log("Host - Encrypted Password:", encryptedPassword);
+
+      // Verify encryption by decrypting
+      const decryptedBytes = CryptoJS.AES.decrypt(encryptedPassword, secretKey);
+      const decryptedPassword = decryptedBytes.toString(CryptoJS.enc.Utf8);
+      if (decryptedPassword !== password) {
+        throw new Error("Encryption verification failed");
+      }
+      console.log("Host - Decrypted Password (Verification):", decryptedPassword);
 
       // Upload encrypted password to IPFS
       const passwordCID = await uploadToIPFS(encryptedPassword);
+      console.log("Host - Password CID:", passwordCID);
       if (!passwordCID.match(/^(Qm[1-9A-Za-z]{44}|bafy[0-9a-z]{50})$/)) {
         throw new Error("Invalid IPFS CID for password");
       }
@@ -178,14 +150,14 @@ export default function HostNetworkPage() {
       // Send transaction to hostANetwork
       const tx = await contract?.hostANetwork(
         form.getValues().ssid,
-        passwordCID, // Use CID, not encryptedPassword
+        passwordCID,
         form.getValues().location.city,
         form.getValues().location.country,
         form.getValues().location.area,
         form.getValues().location.lat.toString(),
         form.getValues().location.lng.toString(),
         form.getValues().speed.toString(),
-        ethers.parseUnits(form.getValues().price.toString(), 18), // Assuming USDT with 18 decimals
+        ethers.parseUnits(form.getValues().price.toString(), 18), // USDT, 18 decimals
         form.getValues().description || "",
         imageCID || ""
       );
@@ -201,13 +173,21 @@ export default function HostNetworkPage() {
       setSubmitted(true);
       setRoleType("host");
     } catch (error: unknown) {
+      console.error("Transaction error:", error);
       if (error instanceof Error) {
         toast({
           title: "Error",
-          description:
-            error instanceof Error && error.message.includes("Invalid IPFS CID")
-              ? "Failed to upload password to IPFS."
-              : "Failed to list your network. Please try again.",
+          description: error.message.includes("Invalid IPFS CID")
+            ? "Failed to upload password to IPFS."
+            : error.message.includes("Encryption verification")
+            ? "Failed to verify password encryption."
+            : "Failed to list your network. Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
           variant: "destructive",
         });
       }
@@ -362,10 +342,6 @@ export default function HostNetworkPage() {
                 <MapPin className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
                 Location
               </FormLabel>
-              <div
-                id="host-map"
-                className="h-64 w-full rounded-lg border border-gray-300"
-              />
               <FormDescription>
                 Click on the map to set your network’s location.
               </FormDescription>
@@ -479,7 +455,6 @@ export default function HostNetworkPage() {
                       rows={3}
                       placeholder="Any special info or house rules? (optional)"
                       maxLength={400}
-                      required
                       {...field}
                     />
                   </FormControl>

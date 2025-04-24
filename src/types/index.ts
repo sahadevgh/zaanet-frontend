@@ -14,6 +14,7 @@ export type WifiNetwork = {
   price: string;
   hostWallet: string;
   password: string;
+  hasPaid?: boolean;
 };
 
 export interface Session {

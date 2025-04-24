@@ -3,7 +3,7 @@
 import { ethers } from "ethers";
 import { toast } from "@/hooks/use-toast";
 
-export const contractAddress = "0xc89af8cB5F0f50Ac55fb4731e6eEa9dBeeD648FC";
+export const contractAddress = "0x8BB782EB4a225cA3866fDAc39764A8C71362AE52";
 
 export const contract_Abi = [
   {
@@ -1042,23 +1042,23 @@ export async function uploadImageToIPFS(file: File): Promise<string> {
     }
   }
 
-  export async function uploadToIPFS(data: string): Promise<string> {
-    try {
-      const response = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_PINATA_JWT}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ pinataContent: data }),
-      });
-      const result = await response.json();
-      if (!result.IpfsHash) {
-        throw new Error('Failed to get IPFS CID');
-      }
-      return result.IpfsHash; // Returns Qm... or bafy...
-    } catch (error) {
-      console.error('IPFS upload error:', error);
-      throw new Error('Failed to upload to IPFS');
+  export async function uploadToIPFS(encryptedText: string): Promise<string> {
+    const blob = new Blob([encryptedText], { type: "text/plain" });
+    const formData = new FormData();
+    formData.append("file", blob, "password.txt");
+  
+    const response = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_PINATA_JWT}`,
+      },
+      body: formData,
+    });
+  
+    const result = await response.json();
+    if (!result.IpfsHash) {
+      throw new Error("Failed to get IPFS CID");
     }
+    return result.IpfsHash;
   }
+  
