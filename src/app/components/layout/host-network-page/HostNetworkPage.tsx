@@ -29,7 +29,6 @@ import {
   uploadToIPFS,
 } from "@/app/components/web3/contants";
 import DashboardDirect from "@/app/components/DashboardDirect";
-import Layout from "../Layout";
 
 // Zod schema for form validation
 const hostSchema = z.object({
@@ -127,89 +126,93 @@ export default function HostNetworkPage() {
     initializeContract();
   }, []);
 
- // Form submission handler
-async function onSubmit() {
-  try {
-    if (!contract) {
+  // Form submission handler
+  async function onSubmit() {
+    try {
+      if (!contract) {
+        toast({
+          title: "Error",
+          description: "Blockchain contract not loaded. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Upload image to IPFS if provided
+      let imageCID = "";
+      const imageFile = form.getValues().image;
+      if (imageFile) {
+        imageCID = await uploadImageToIPFS(imageFile);
+      }
+
+      // Make sure some values are set
+      if (
+        !form.getValues().location.city ||
+        !form.getValues().location.country ||
+        !form.getValues().location.area ||
+        !form.getValues().location.lat ||
+        !form.getValues().location.lng
+      ) {
+        toast({
+          title: "Error",
+          description: "Please select a valid location on the map.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Encrypt password
+      const secretKey = process.env.NEXT_PUBLIC_ENCRYPTION_KEY!;
+      const password = form.getValues().password;
+      const encryptedPassword = CryptoJS.AES.encrypt(
+        password,
+        secretKey
+      ).toString();
+
+      // Upload encrypted password to IPFS
+      const passwordCID = await uploadToIPFS(encryptedPassword);
+      if (!passwordCID.match(/^(Qm[1-9A-Za-z]{44}|bafy[0-9a-z]{50})$/)) {
+        throw new Error("Invalid IPFS CID for password");
+      }
+
+      // Send transaction to hostANetwork
+      const tx = await contract?.hostANetwork(
+        form.getValues().ssid,
+        passwordCID, // Use CID, not encryptedPassword
+        form.getValues().location.city,
+        form.getValues().location.country,
+        form.getValues().location.area,
+        form.getValues().location.lat.toString(),
+        form.getValues().location.lng.toString(),
+        form.getValues().speed.toString(),
+        ethers.parseUnits(form.getValues().price.toString(), 18), // Assuming USDT with 18 decimals
+        form.getValues().description || "",
+        imageCID || ""
+      );
+
+      // Wait for transaction confirmation
+      await tx.wait();
+
+      // Show success message and update UI
       toast({
-        title: "Error",
-        description: "Blockchain contract not loaded. Please try again.",
-        variant: "destructive",
+        title: "Network Listed!",
+        description: "Your WiFi network is now hosted and available to users.",
       });
-      return;
+      setSubmitted(true);
+      setRoleType("host");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast({
+          title: "Error",
+          description:
+            error instanceof Error && error.message.includes("Invalid IPFS CID")
+              ? "Failed to upload password to IPFS."
+              : "Failed to list your network. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
-
-    // Upload image to IPFS if provided
-    let imageCID = "";
-    const imageFile = form.getValues().image;
-    if (imageFile) {
-      imageCID = await uploadImageToIPFS(imageFile);
-    }
-
-    // Make sure some values are set
-    if (
-      !form.getValues().location.city ||
-      !form.getValues().location.country ||
-      !form.getValues().location.area ||
-      !form.getValues().location.lat ||
-      !form.getValues().location.lng
-    ) {
-      toast({
-        title: "Error",
-        description: "Please select a valid location on the map.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Encrypt password
-    const secretKey = process.env.NEXT_PUBLIC_ENCRYPTION_KEY!;
-    const password = form.getValues().password;
-    const encryptedPassword = CryptoJS.AES.encrypt(password, secretKey).toString();
-
-    // Upload encrypted password to IPFS
-    const passwordCID = await uploadToIPFS(encryptedPassword);
-    if (!passwordCID.match(/^(Qm[1-9A-Za-z]{44}|bafy[0-9a-z]{50})$/)) {
-      throw new Error('Invalid IPFS CID for password');
-    }
-
-    // Send transaction to hostANetwork
-    const tx = await contract?.hostANetwork(
-      form.getValues().ssid,
-      passwordCID, // Use CID, not encryptedPassword
-      form.getValues().location.city,
-      form.getValues().location.country,
-      form.getValues().location.area,
-      form.getValues().location.lat.toString(),
-      form.getValues().location.lng.toString(),
-      form.getValues().speed.toString(),
-      ethers.parseUnits(form.getValues().price.toString(), 18), // Assuming USDT with 18 decimals
-      form.getValues().description || "",
-      imageCID || ""
-    );
-
-    // Wait for transaction confirmation
-    await tx.wait();
-
-    // Show success message and update UI
-    toast({
-      title: "Network Listed!",
-      description: "Your WiFi network is now hosted and available to users.",
-    });
-    setSubmitted(true);
-    setRoleType("host");
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-    toast({
-      title: "Error",
-      description: error instanceof Error && error.message.includes('Invalid IPFS CID')
-        ? 'Failed to upload password to IPFS.'
-        : 'Failed to list your network. Please try again.',
-      variant: "destructive",
-    });
-    };
   }
-}
 
   // Render summary after successful submission
   function renderSummary(data: HostForm) {
@@ -290,44 +293,146 @@ async function onSubmit() {
   }
 
   return (
-    <Layout>
-      <div className="container max-w-2xl py-12 px-4 mx-auto">
-        <div className="flex flex-col items-center mb-8">
-          <div className="bg-zaanet-purple/10 rounded-full p-6 animate-scale-in">
-            <Upload size={42} className="text-zaanet-purple" />
-          </div>
-          <h1 className="text-3xl font-bold text-zaanet-purple mb-2 font-heading">
-            Become a Host
-          </h1>
-          <p className="text-gray-700 text-center max-w-xl mb-3">
-            Share your WiFi and earn passive income in USDT. Contribute to
-            affordable, accessible internet for your community! <br />
-            <span className="text-zaanet-purple-dark">
-              It’s easy, instant, and secure.
-            </span>
-          </p>
+    <div className="container max-w-2xl py-12 px-4 mx-auto">
+      <div className="flex flex-col items-center mb-8">
+        <div className="bg-zaanet-purple/10 rounded-full p-6 animate-scale-in">
+          <Upload size={42} className="text-zaanet-purple" />
         </div>
-        <div className="bg-white border border-zaanet-purple-light rounded-xl p-8 shadow-lg mb-8 animate-fade-in">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        <h1 className="text-3xl font-bold text-zaanet-purple mb-2 font-heading">
+          Become a Host
+        </h1>
+        <p className="text-gray-700 text-center max-w-xl mb-3">
+          Share your WiFi and earn passive income in USDT. Contribute to
+          affordable, accessible internet for your community! <br />
+          <span className="text-zaanet-purple-dark">
+            It’s easy, instant, and secure.
+          </span>
+        </p>
+      </div>
+      <div className="bg-white border border-zaanet-purple-light rounded-xl p-8 shadow-lg mb-8 animate-fade-in">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <FormField
+              control={form.control}
+              name="ssid"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    <Wifi className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
+                    Network Name (SSID)
+                  </FormLabel>
+                  <FormControl>
+                    <Input placeholder="E.g. ZaaNet Home" required {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Pick a friendly name for your WiFi.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    <Key className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
+                    WiFi Password
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="Enter WiFi password"
+                      autoComplete="off"
+                      required
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Required for secure user access. Your password is encrypted
+                    before being stored.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormItem>
+              <FormLabel>
+                <MapPin className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
+                Location
+              </FormLabel>
+              <div
+                id="host-map"
+                className="h-64 w-full rounded-lg border border-gray-300"
+              />
+              <FormDescription>
+                Click on the map to set your network’s location.
+              </FormDescription>
+            </FormItem>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <FormField
                 control={form.control}
-                name="ssid"
+                name="location.country"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Ghana" required {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location.city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Accra" required {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location.area"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Area</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Osu" required {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="speed"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
                       <Wifi className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
-                      Network Name (SSID)
+                      WiFi Speed (Mbps)
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="E.g. ZaaNet Home"
+                        type="number"
+                        min={1}
+                        step={1}
+                        placeholder="e.g. 25"
                         required
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      Pick a friendly name for your WiFi.
+                      Your internet package speed.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -335,238 +440,128 @@ async function onSubmit() {
               />
               <FormField
                 control={form.control}
-                name="password"
+                name="price"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      <Key className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
-                      WiFi Password
+                      <DollarSign className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
+                      Price (USDT/day)
                     </FormLabel>
                     <FormControl>
                       <Input
-                        type="password"
-                        placeholder="Enter WiFi password"
-                        autoComplete="off"
+                        type="number"
+                        min={0.002}
+                        step={0.002}
+                        placeholder="e.g. 0.02"
                         required
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      Required for secure user access. Your password is
-                      encrypted before being stored.
+                      Users pay this to connect for a day.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormItem>
-                <FormLabel>
-                  <MapPin className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
-                  Location
-                </FormLabel>
-                <div
-                  id="host-map"
-                  className="h-64 w-full rounded-lg border border-gray-300"
-                />
-                <FormDescription>
-                  Click on the map to set your network’s location.
-                </FormDescription>
-              </FormItem>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="location.country"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Country</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Ghana" required {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="location.city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>City</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Accra" required {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="location.area"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Area</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Osu" required {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="speed"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        <Wifi className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
-                        WiFi Speed (Mbps)
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={1}
-                          step={1}
-                          placeholder="e.g. 25"
-                          required
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Your internet package speed.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        <DollarSign className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
-                        Price (USDT/day)
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={0.002}
-                          step={0.002}
-                          placeholder="e.g. 0.02"
-                          required
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Users pay this to connect for a day.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      <Info className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
-                      Description
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea
-                        rows={3}
-                        placeholder="Any special info or house rules? (optional)"
-                        maxLength={400}
-                        required
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      E.g. “Available 24/7, please use respectfully.”
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="image"
-                render={({ field: { onChange } }) => (
-                  <FormItem>
-                    <FormLabel>
-                      <Upload className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
-                      Add a Photo
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => onChange(e.target.files?.[0])}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      (Optional) Show where users should connect from.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button
-                type="submit"
-                className="w-full bg-zaanet-purple hover:bg-zaanet-purple-dark text-white mt-2 font-semibold"
-                size="lg"
-              >
-                List My Network
-              </Button>
-            </form>
-          </Form>
-          <div className="flex gap-4 mt-8">
-            <div className="bg-zaanet-green rounded-lg px-4 py-3 text-sm text-zaanet-purple-dark flex-1 shadow">
-              <span className="font-bold">Tip:</span> Your exact address is not
-              shown publicly—only a general location for privacy.
             </div>
-            <div className="bg-zaanet-blue rounded-lg px-4 py-3 text-sm text-zaanet-purple-dark flex-1 shadow hidden sm:block">
-              <span className="font-bold">Need help?</span> See our{" "}
-              <a href="#" className="underline text-zaanet-purple">
-                hosting guide
-              </a>
-              .
-            </div>
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    <Info className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
+                    Description
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      rows={3}
+                      placeholder="Any special info or house rules? (optional)"
+                      maxLength={400}
+                      required
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    E.g. “Available 24/7, please use respectfully.”
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="image"
+              render={({ field: { onChange } }) => (
+                <FormItem>
+                  <FormLabel>
+                    <Upload className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
+                    Add a Photo
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => onChange(e.target.files?.[0])}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    (Optional) Show where users should connect from.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button
+              type="submit"
+              className="w-full bg-zaanet-purple hover:bg-zaanet-purple-dark text-white mt-2 font-semibold"
+              size="lg"
+            >
+              List My Network
+            </Button>
+          </form>
+        </Form>
+        <div className="flex gap-4 mt-8">
+          <div className="bg-zaanet-green rounded-lg px-4 py-3 text-sm text-zaanet-purple-dark flex-1 shadow">
+            <span className="font-bold">Tip:</span> Your exact address is not
+            shown publicly—only a general location for privacy.
           </div>
-        </div>
-        <div className="flex flex-col md:flex-row md:items-center gap-8 mt-14 justify-center">
-          <div>
-            <h2 className="text-xl font-semibold text-zaanet-purple mb-2">
-              Why Host on ZaaNet?
-            </h2>
-            <ul className="text-gray-700 list-disc ml-5 space-y-1">
-              <li>
-                Earn effortless crypto income—get paid instantly for every
-                connection.
-              </li>
-              <li>
-                Empower your community with affordable, reliable internet.
-              </li>
-              <li>
-                Full control—pause/unpause, set your own price, and see your
-                earnings.
-              </li>
-              <li>We handle seamless secure payments and network access.</li>
-            </ul>
+          <div className="bg-zaanet-blue rounded-lg px-4 py-3 text-sm text-zaanet-purple-dark flex-1 shadow hidden sm:block">
+            <span className="font-bold">Need help?</span> See our{" "}
+            <a href="#" className="underline text-zaanet-purple">
+              hosting guide
+            </a>
+            .
           </div>
-          <Image
-            src="/placeholder.svg"
-            alt="Community illustration"
-            width={160}
-            height={160}
-            className="w-40 h-40 object-contain mx-auto animate-blob"
-          />
         </div>
       </div>
-    </Layout>
+      <div className="flex flex-col md:flex-row md:items-center gap-8 mt-14 justify-center">
+        <div>
+          <h2 className="text-xl font-semibold text-zaanet-purple mb-2">
+            Why Host on ZaaNet?
+          </h2>
+          <ul className="text-gray-700 list-disc ml-5 space-y-1">
+            <li>
+              Earn effortless crypto income—get paid instantly for every
+              connection.
+            </li>
+            <li>Empower your community with affordable, reliable internet.</li>
+            <li>
+              Full control—pause/unpause, set your own price, and see your
+              earnings.
+            </li>
+            <li>We handle seamless secure payments and network access.</li>
+          </ul>
+        </div>
+        <Image
+          src="/placeholder.svg"
+          alt="Community illustration"
+          width={160}
+          height={160}
+          className="w-40 h-40 object-contain mx-auto animate-blob"
+        />
+      </div>
+    </div>
   );
 }

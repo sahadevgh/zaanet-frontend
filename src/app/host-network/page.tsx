@@ -1,12 +1,15 @@
-import React from 'react'
-import HostNetworkPage from '../components/layout/host-network-page/HostNetworkPage'
+import React from "react";
+import HostNetworkPage from "../components/layout/host-network-page/HostNetworkPage";
+import Layout from "../components/layout/Layout";
 
 function page() {
   return (
     <div>
-      <HostNetworkPage />
+      <Layout>
+        <HostNetworkPage />
+      </Layout>
     </div>
-  )
+  );
 }
 
-export default page
+export default page;
