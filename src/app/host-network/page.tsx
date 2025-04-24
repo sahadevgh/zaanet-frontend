@@ -1,10 +1,10 @@
 import React from 'react'
-import HostNetworkPage from '@/app/host-network/HostNetworkPage'
+import HostNetworkPage from '../components/layout/host-network-page/HostNetworkPage'
 
 function page() {
   return (
     <div>
-        <HostNetworkPage />
+      <HostNetworkPage />
     </div>
   )
 }

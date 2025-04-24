@@ -19,10 +19,7 @@ import {
   FormDescription,
 } from "@/app/components/ui/form";
 import { toast } from "@/hooks/use-toast";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import Image from "next/image";
-import Layout from "../components/layout/Layout";
 import CryptoJS from "crypto-js";
 import {
   contract_Abi,
@@ -32,6 +29,7 @@ import {
   uploadToIPFS,
 } from "@/app/components/web3/contants";
 import DashboardDirect from "@/app/components/DashboardDirect";
+import Layout from "../Layout";
 
 // Zod schema for form validation
 const hostSchema = z.object({
@@ -74,44 +72,44 @@ export default function HostNetworkPage() {
   const [roleType, setRoleType] = useState("guest");
 
   // Initialize Leaflet map
-  useEffect(() => {
-    const map = L.map("host-map").setView([5.6037, -0.187], 12);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution:
-        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
+  // useEffect(() => {
+  //   const map = L.map("host-map").setView([5.6037, -0.187], 12);
+  //   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  //     attribution:
+  //       '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  //   }).addTo(map);
 
-    const marker = L.marker([5.6037, -0.187]).addTo(map);
-    map.on("click", async (e) => {
-      const { lat, lng } = e.latlng;
-      marker.setLatLng([lat, lng]);
-      form.setValue("location.lat", lat);
-      form.setValue("location.lng", lng);
+  //   const marker = L.marker([5.6037, -0.187]).addTo(map);
+  //   map.on("click", async (e) => {
+  //     const { lat, lng } = e.latlng;
+  //     marker.setLatLng([lat, lng]);
+  //     form.setValue("location.lat", lat);
+  //     form.setValue("location.lng", lng);
 
-      // Reverse geocoding with Nominatim
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
-        );
-        const data = await response.json();
-        form.setValue("location.city", data.address.city || "Unknown");
-        form.setValue("location.country", data.address.country || "Unknown");
-        form.setValue("location.area", data.address.suburb || "Unknown");
-      } catch (error) {
-        console.error("Geocoding error:", error);
-        toast({
-          title: "Error",
-          description:
-            "Failed to fetch location details. Please enter manually.",
-          variant: "destructive",
-        });
-      }
-    });
+  //     // Reverse geocoding with Nominatim
+  //     try {
+  //       const response = await fetch(
+  //         `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+  //       );
+  //       const data = await response.json();
+  //       form.setValue("location.city", data.address.city || "Unknown");
+  //       form.setValue("location.country", data.address.country || "Unknown");
+  //       form.setValue("location.area", data.address.suburb || "Unknown");
+  //     } catch (error) {
+  //       console.error("Geocoding error:", error);
+  //       toast({
+  //         title: "Error",
+  //         description:
+  //           "Failed to fetch location details. Please enter manually.",
+  //         variant: "destructive",
+  //       });
+  //     }
+  //   });
 
-    return () => {
-      map.remove();
-    };
-  }, [form]);
+  //   return () => {
+  //     map.remove();
+  //   };
+  // }, [form]);
 
   // Load Ethereum contract
   useEffect(() => {

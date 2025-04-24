@@ -6,8 +6,6 @@ import type { WifiNetwork } from '@/types';
 import WifiNetworkCard from '@/app/components/wifi/WifiNetworkCard';
 import { Button } from '@/app/components/ui/button';
 import { MapPin, SortAsc, SortDesc, List, Map, Loader2 } from 'lucide-react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { contract_Abi, contractAddress, loadContract } from '@/app/components/web3/contants';
 import { ethers } from 'ethers';
 import { Skeleton } from '@/app/components/ui/skeleton';
@@ -187,29 +185,29 @@ export default function BrowseNetworksPage() {
         : b.location.area.localeCompare(a.location.area)
     );
   }
-  useEffect(() => {
-    if (viewMode === 'map') {
-      // Ensure Leaflet is only used client-side
-        const map = L.map('networks-map').setView([7.9465, -1.0232], 7);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution:
-            '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        }).addTo(map);
+  // useEffect(() => {
+  //   if (viewMode === 'map') {
+  //     // Ensure Leaflet is only used client-side
+  //       const map = L.map('networks-map').setView([7.9465, -1.0232], 7);
+  //       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  //         attribution:
+  //           '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  //       }).addTo(map);
 
-        filteredNetworks.forEach((network) => {
-          L.marker([network.location.lat, network.location.lng])
-            .addTo(map)
-            .bindPopup(
-              `<b>${network.name}</b><br>${network.location.city}, ${network.location.area}<br>Speed: ${network.speed} Mbps<br>Price: ${network.price} ETH`
-            );
-        });
+  //       filteredNetworks.forEach((network) => {
+  //         L.marker([network.location.lat, network.location.lng])
+  //           .addTo(map)
+  //           .bindPopup(
+  //             `<b>${network.name}</b><br>${network.location.city}, ${network.location.area}<br>Speed: ${network.speed} Mbps<br>Price: ${network.price} ETH`
+  //           );
+  //       });
 
-        return () => {
-          map.remove();
-        };
+  //       return () => {
+  //         map.remove();
+  //       };
       
-    }
-  }, [viewMode, filteredNetworks]);
+  //   }
+  // }, [viewMode, filteredNetworks]);
 
   return (
     <div className="container min-h-screen max-w-6xl mx-auto py-12 px-4 sm:px-6">
