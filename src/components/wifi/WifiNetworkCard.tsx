@@ -12,6 +12,7 @@ interface WifiNetworkCardProps {
 }
 
 const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({ network, onConnect }) => (
+
   <Card className="bg-zaanet-purple-light hover-scale transition-shadow duration-200 cursor-pointer border-zaanet-purple/[0.11] shadow-sm">
     <CardHeader className="flex flex-row items-start gap-4 pb-2">
       <div className="bg-zaanet-purple/10 rounded-full p-2">
@@ -27,7 +28,7 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({ network, onConnect })
     <CardContent className="pt-0 flex flex-col gap-3">
       <div className="flex justify-between items-center">
         <span className="text-xs text-gray-700">Speed: {network.speed} Mbps</span>
-        <span className="font-bold text-zaanet-purple text-md">{network.price} USDT</span>
+        <span className="font-bold text-zaanet-purple text-md">{network.price} ETH</span>
       </div>
       <Button
         variant="outline"

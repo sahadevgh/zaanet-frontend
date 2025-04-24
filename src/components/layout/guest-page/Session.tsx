@@ -47,7 +47,7 @@ const mockHistory = [
 ]
 
 export default function GuestSession() {
-  const [remainingTime, setRemainingTime] = useState<number>(0)
+  // const [remainingTime, setRemainingTime] = useState<number>(0)
   const [totalTime, setTotalTime] = useState<number>(0)
   const [progressPercent, setProgressPercent] = useState<number>(0)
   const [timeDisplay, setTimeDisplay] = useState<string>('')
@@ -62,7 +62,7 @@ export default function GuestSession() {
       const now = new Date()
       const remainingTimeInSec = Math.max(0, (mockSession.endTime.getTime() - now.getTime()) / 1000)
 
-      setRemainingTime(remainingTimeInSec)
+      // setRemainingTime(remainingTimeInSec)
       setProgressPercent((remainingTimeInSec / totalSessionTime) * 100)
       setIsLowTime(remainingTimeInSec <= 300) // Warn when < 5 minutes
 
