@@ -1,5 +1,5 @@
 import React from 'react'
-import HostDashboard from '../../../components/layout/host-page/Dashboard'
+import HostDashboard from '../../components/layout/host-page/Dashboard'
 
 function page() {
   return (

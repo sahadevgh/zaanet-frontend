@@ -1,5 +1,5 @@
 import React from 'react'
-import GuestSession from '../../../components/layout/guest-page/Session'
+import GuestSession from '../../components/layout/guest-page/Session'
 
 function page() {
   return (

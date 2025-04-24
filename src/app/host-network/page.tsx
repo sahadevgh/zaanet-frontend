@@ -1,5 +1,5 @@
-import HostNetworkPage from '@/components/layout/host-network-page/HostNetworkPage'
 import React from 'react'
+import HostNetworkPage from '@/app/host-network/HostNetworkPage'
 
 function page() {
   return (
