@@ -3,7 +3,7 @@
 import { ethers } from "ethers";
 import { toast } from "@/hooks/use-toast";
 
-export const contractAddress = "0x8BB782EB4a225cA3866fDAc39764A8C71362AE52";
+export const contractAddress = "0x72AD0FAb5b1046b1A95a3f6a1664431E85F561aa";
 
 export const contract_Abi = [
   {
