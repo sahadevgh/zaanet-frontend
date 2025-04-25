@@ -971,40 +971,54 @@ export const contract_Abi = [
   },
 ];
 
-
-// Function to load the contract
 export const loadContract = async ({
   contractAddress,
   contractABI,
+  withSigner = false,
 }: {
   contractAddress: string;
   contractABI: ethers.InterfaceAbi;
+  withSigner?: boolean;
 }) => {
   try {
-    if (!window.ethereum) {
-      toast({
-        title: "Error",
-        description: "Please install MetaMask or another Ethereum wallet.",
-        variant: "destructive",
-      });
-      return;
-    }
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
+    let provider: ethers.JsonRpcProvider | ethers.BrowserProvider;
+    let signerOrProvider: ethers.Signer | ethers.Provider;
 
-    // Check network (e.g., ensure it's the correct chain)
-    const network = await provider.getNetwork();
-    const expectedChainId = process.env.NEXT_PUBLIC_CHAIN_ID || "421614"; // Arbitrum sepolia
-    if (network.chainId.toString() !== expectedChainId) {
-      toast({
-        title: "Wrong Network",
-        description: `Please switch to Arbitrum Sepolia (Chain ID: ${expectedChainId}).`,
-        variant: "destructive",
-      });
-      return;
+    if (withSigner) {
+      if (!window.ethereum) {
+        toast({
+          title: "Error",
+          description: "Please install MetaMask or another Ethereum wallet.",
+          variant: "destructive",
+        });
+        return;
+      }
+      provider = new ethers.BrowserProvider(window.ethereum);
+
+      const network = await provider.getNetwork();
+      const expectedChainId = process.env.NEXT_PUBLIC_CHAIN_ID || "421614";
+      if (network.chainId.toString() !== expectedChainId) {
+        toast({
+          title: "Wrong Network",
+          description: `Please switch to Arbitrum Sepolia (Chain ID: ${expectedChainId}).`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const signer = await provider.getSigner();
+      signerOrProvider = signer;
+    } else {
+      // Use static public RPC provider
+      const alchemyApiKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
+      if (!alchemyApiKey) {
+        throw new Error("Alchemy API key is missing");
+      }
+      provider = new ethers.JsonRpcProvider(`https://arb-sepolia.g.alchemy.com/v2/${alchemyApiKey}`);
+      signerOrProvider = provider;
     }
 
-    const contract = new ethers.Contract(contractAddress, contractABI, signer);
+    const contract = new ethers.Contract(contractAddress, contractABI, signerOrProvider);
     return contract;
   } catch (error) {
     console.error("Error loading contract:", error);
