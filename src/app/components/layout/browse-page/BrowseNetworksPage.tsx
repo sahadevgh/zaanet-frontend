@@ -81,6 +81,9 @@ export default function BrowseNetworksPage() {
         .map((network) => ({
           id: network.id.toString(),
           name: network.name,
+          description: network.description || "No description available",
+          imageCID: network.imageCID || "",
+          type: network.type || "Unknown",
           location: {
             city: network.location.city,
             area: network.location.area,

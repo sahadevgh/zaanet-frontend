@@ -1,28 +1,38 @@
-'use client'
+"use client";
 
-import { Wifi } from 'lucide-react'
-import Link from 'next/link'
-import { Button } from '@/app/components/ui/button'
+import { Wifi } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/app/components/ui/button";
 
 const HeroSection = () => {
   return (
-    <section className="bg-gradient-to-br from-white to-zaanet-purple-light py-20">
+    <section className="bg-gradient-to-br from-white to-zaanet-purple-light py-20 h-[80vh] flex flex-col justify-center">
       <div className="container mx-auto px-4">
-        <div className="flex flex-col md:flex-row items-center">
+        <div className="flex flex-col md:flex-row items-center justify-center">
           <div className="md:w-1/2 mb-10 md:mb-0">
             <h1 className="text-4xl md:text-5xl font-bold font-heading mb-6">
-              Connect and Share Internet, <span className="text-zaanet-purple">Decentralized</span>
+              Connect and Share Internet,{" "}
+              <span className="text-zaanet-purple">Decentralized</span>
             </h1>
             <p className="text-lg mb-8 text-gray-600 max-w-md">
-              ZaaNet enables WiFi sharing in underserved communities, bringing affordable internet access through peer-to-peer connections.
+              ZaaNet enables WiFi sharing in underserved communities, bringing
+              affordable internet access through peer-to-peer connections.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button className="bg-zaanet-purple hover:bg-zaanet-purple-dark font-medium text-white px-8 py-6">
-                <Link href="/browse">Find WiFi</Link>
-              </Button>
-              <Button variant="outline" className="bg-white text-zaanet-purple border-zaanet-purple hover:bg-zaanet-purple hover:text-white px-8 py-6">
-                <Link href="/host-network">Host a Network</Link>
-              </Button>
+              <Link href="/browse">
+                <Button className="bg-zaanet-purple hover:bg-zaanet-purple-dark font-medium text-white px-8 py-6">
+                  Find WiFi
+                </Button>
+              </Link>
+
+              <Link href="/host-network">
+                <Button
+                  variant="outline"
+                  className="bg-white text-zaanet-purple border-zaanet-purple hover:bg-zaanet-purple hover:text-white px-8 py-6"
+                >
+                  Host a Network
+                </Button>
+              </Link>
             </div>
           </div>
 
@@ -45,7 +55,9 @@ const HeroSection = () => {
                       <p className="text-xs text-gray-500">Tamale, Ghana</p>
                     </div>
                   </div>
-                  <span className="text-sm font-medium text-zaanet-purple-dark">0.5 USDT/hr</span>
+                  <span className="text-sm font-medium text-zaanet-purple-dark">
+                    0.5 USDT/hr
+                  </span>
                 </div>
 
                 <div className="bg-gray-50 rounded-md p-3 mb-6">
@@ -54,7 +66,10 @@ const HeroSection = () => {
                     <span className="text-sm">10 Mbps</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                    <div className="bg-zaanet-purple h-2 rounded-full" style={{ width: '70%' }} />
+                    <div
+                      className="bg-zaanet-purple h-2 rounded-full"
+                      style={{ width: "70%" }}
+                    />
                   </div>
                 </div>
 
@@ -67,7 +82,7 @@ const HeroSection = () => {
         </div>
       </div>
     </section>
-  )
-}
+  );
+};
 
-export default HeroSection
+export default HeroSection;

@@ -4,6 +4,7 @@
 export type WifiNetwork = {
   id: string;
   name: string;
+  description: string;
   location: {
     city: string;
     area: string;
@@ -14,7 +15,9 @@ export type WifiNetwork = {
   price: string;
   hostWallet: string;
   password: string;
+  imageCID: string;
   hasPaid?: boolean;
+  type: string;
 };
 
 export interface Session {
