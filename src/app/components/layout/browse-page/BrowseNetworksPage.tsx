@@ -75,7 +75,8 @@ export default function BrowseNetworksPage() {
       }
 
       const networksRaw = await Promise.all(networkPromises);
-
+    
+      // load networks
       const networks: WifiNetwork[] = networksRaw
         .filter((network) => network.id !== 0 && network.isActive)
         .map((network) => ({
