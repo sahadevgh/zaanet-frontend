@@ -40,6 +40,7 @@ export default function BrowseNetworksPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
+const [stopProcessing, setStopProcessing] = useState(true);
 
   async function getAllHostedNetworksByIds(id: number) {
     const contractInstance = await loadContract({
@@ -75,7 +76,7 @@ export default function BrowseNetworksPage() {
       }
 
       const networksRaw = await Promise.all(networkPromises);
-    
+
       // load networks
       const networks: WifiNetwork[] = networksRaw
         .filter((network) => network.id !== 0 && network.isActive)
@@ -110,6 +111,8 @@ export default function BrowseNetworksPage() {
     fetchHostedNetworks();
   }, []);
 
+
+  // Handle Connect
   async function handleConnect(network: WifiNetwork) {
     if (!isConnected || !address) {
       toast({
@@ -120,7 +123,13 @@ export default function BrowseNetworksPage() {
       return;
     }
 
-    if (!contract || !walletClient) {
+    const contractInstance = await loadContract({
+      contractAddress,
+      contractABI: contract_Abi,
+      withSigner: true,
+    });
+
+    if (!contractInstance || !walletClient) {
       toast({
         title: "Error",
         description: "Contract or wallet not loaded.",
@@ -129,8 +138,11 @@ export default function BrowseNetworksPage() {
       return;
     }
 
+    setStopProcessing(false)
     try {
-      const networkData = await contract.getHostedNetworkById(network.id);
+      const networkData = await contractInstance.getHostedNetworkById(
+        network.id
+      );
       if (!networkData.isActive) {
         throw new Error("Network is not active");
       }
@@ -139,14 +151,14 @@ export default function BrowseNetworksPage() {
       }
 
       let passwordCID: string;
-      const hasPaid = await contract.hasPaid(network.id, address);
+      const hasPaid = await contractInstance.hasPaid(network.id, address);
       if (hasPaid) {
-        passwordCID = await contract.getPasswordCID(network.id);
+        passwordCID = await contractInstance.getPasswordCID(network.id);
       } else {
         // Convert price string (e.g., "0.01") to wei
         const priceInETH = ethers.parseEther(network.price);
 
-        const tx = await contract.acceptPayment(network.id, {
+        const tx = await contractInstance.acceptPayment(network.id, {
           value: priceInETH, // Send ETH with the transaction
           gasLimit: 200_000,
         });
@@ -157,7 +169,7 @@ export default function BrowseNetworksPage() {
         });
 
         await tx.wait();
-        passwordCID = await contract.getPasswordCID(network.id);
+        passwordCID = await contractInstance.getPasswordCID(network.id);
       }
 
       if (!passwordCID.match(/^(Qm[1-9A-Za-z]{44}|bafy[0-9a-z]{50})$/)) {
@@ -210,6 +222,7 @@ export default function BrowseNetworksPage() {
         description: errorMessage,
         variant: "destructive",
       });
+      setStopProcessing(true)
     }
   }
 
@@ -316,6 +329,7 @@ export default function BrowseNetworksPage() {
                 address={address || ""}
                 contract={contract}
                 onConnect={handleConnect}
+                stopProcessing={stopProcessing}
               />
             ))
           ) : (

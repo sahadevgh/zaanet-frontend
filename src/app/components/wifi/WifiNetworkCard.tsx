@@ -30,6 +30,7 @@ interface WifiNetworkCardProps {
   address: string;
   contract: ethers.Contract | null;
   onConnect?: (network: WifiNetwork) => void;
+  stopProcessing: boolean;
 }
 
 // Generate a unique gradient based on network ID
@@ -60,6 +61,7 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
   address,
   contract,
   onConnect,
+  stopProcessing
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [hasPaid, setHasPaid] = useState(false);
@@ -141,7 +143,7 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
   // Listen for payment events
   useEffect(() => {
     if (!contract || !address) return;
-
+    
     const handlePaymentSuccess = async (payer: string, networkId: string) => {
       if (
         payer.toLowerCase() === address.toLowerCase() &&
@@ -156,6 +158,7 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
           setDecryptedPassword(password);
         } catch (err) {
           console.error("Failed to decrypt after payment:", err);
+          setIsProcessingPayment(false);
         }
       }
     };
@@ -353,9 +356,9 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
               onConnect(network);
             }
           }}
-          disabled={hasPaid || isProcessingPayment}
+          disabled={hasPaid || (isProcessingPayment && !stopProcessing)}
         >
-          {isProcessingPayment ? (
+          {(isProcessingPayment && !stopProcessing) ? (
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>Processing...</span>
