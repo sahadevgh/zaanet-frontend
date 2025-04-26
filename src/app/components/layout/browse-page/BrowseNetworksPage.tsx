@@ -40,7 +40,6 @@ export default function BrowseNetworksPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
-const [stopProcessing, setStopProcessing] = useState(true);
 
   async function getAllHostedNetworksByIds(id: number) {
     const contractInstance = await loadContract({
@@ -77,7 +76,6 @@ const [stopProcessing, setStopProcessing] = useState(true);
 
       const networksRaw = await Promise.all(networkPromises);
 
-      // load networks
       const networks: WifiNetwork[] = networksRaw
         .filter((network) => network.id !== 0 && network.isActive)
         .map((network) => ({
@@ -93,7 +91,7 @@ const [stopProcessing, setStopProcessing] = useState(true);
             lng: parseFloat(network.location.longitude) || 0,
           },
           speed: parseInt(network.wifispeed) || 0,
-          price: ethers.formatUnits(network.price, 18), // USDT, 18 decimals
+          price: ethers.formatUnits(network.price, 18),
           hostWallet: network.hostAddress,
           password: "",
         }));
@@ -112,14 +110,19 @@ const [stopProcessing, setStopProcessing] = useState(true);
   }, []);
 
 
-  // Handle Connect
-  async function handleConnect(network: WifiNetwork) {
+
+ // HANDLE CONNECTION
+  async function handleConnect(
+    network: WifiNetwork,
+    onComplete: (success: boolean) => void
+  ) {
     if (!isConnected || !address) {
       toast({
         title: "Error",
         description: "Please connect your wallet first.",
         variant: "destructive",
       });
+      onComplete(false); // Notify failure
       return;
     }
 
@@ -135,10 +138,10 @@ const [stopProcessing, setStopProcessing] = useState(true);
         description: "Contract or wallet not loaded.",
         variant: "destructive",
       });
+      onComplete(false); // Notify failure
       return;
     }
 
-    setStopProcessing(false)
     try {
       const networkData = await contractInstance.getHostedNetworkById(
         network.id
@@ -155,11 +158,10 @@ const [stopProcessing, setStopProcessing] = useState(true);
       if (hasPaid) {
         passwordCID = await contractInstance.getPasswordCID(network.id);
       } else {
-        // Convert price string (e.g., "0.01") to wei
         const priceInETH = ethers.parseEther(network.price);
 
         const tx = await contractInstance.acceptPayment(network.id, {
-          value: priceInETH, // Send ETH with the transaction
+          value: priceInETH,
           gasLimit: 200_000,
         });
 
@@ -191,12 +193,13 @@ const [stopProcessing, setStopProcessing] = useState(true);
         prev.map((n) => (n.id === network.id ? { ...n, password } : n))
       );
 
-      setTimeout(() => fetchHostedNetworks(), 3000); // debounce-like
+      setTimeout(() => fetchHostedNetworks(), 3000);
 
       toast({
         title: "Success",
         description: `Connected to ${network.name}. Password: ${password}`,
       });
+      onComplete(true); // Notify success
     } catch (error: unknown) {
       console.error("Connection error:", error);
       let errorMessage =
@@ -222,7 +225,7 @@ const [stopProcessing, setStopProcessing] = useState(true);
         description: errorMessage,
         variant: "destructive",
       });
-      setStopProcessing(true)
+      onComplete(false); // Notify failure
     }
   }
 
@@ -329,7 +332,6 @@ const [stopProcessing, setStopProcessing] = useState(true);
                 address={address || ""}
                 contract={contract}
                 onConnect={handleConnect}
-                stopProcessing={stopProcessing}
               />
             ))
           ) : (

@@ -29,19 +29,18 @@ interface WifiNetworkCardProps {
   network: WifiNetwork;
   address: string;
   contract: ethers.Contract | null;
-  onConnect?: (network: WifiNetwork) => void;
-  stopProcessing: boolean;
+  onConnect?: (
+    network: WifiNetwork,
+    onComplete: (success: boolean) => void
+  ) => void; 
 }
 
-// Generate a unique gradient based on network ID
 const getGradientClass = (id: string) => {
-  // Simple hash function to convert string to number
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
     hash = id.charCodeAt(i) + ((hash << 5) - hash);
   }
 
-  // Select from predefined gradient classes
   const gradients = [
     "bg-gradient-to-r from-purple-500 to-pink-500",
     "bg-gradient-to-r from-blue-500 to-cyan-500",
@@ -61,23 +60,17 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
   address,
   contract,
   onConnect,
-  stopProcessing
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [hasPaid, setHasPaid] = useState(false);
-  const [decryptedPassword, setDecryptedPassword] = useState<string | null>(
-    null
-  );
+  const [decryptedPassword, setDecryptedPassword] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-
-  // Loading state for password decryption
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isDecrypting, setIsDecrypting] = useState(false);
 
-  // Fetch image from IPFS
   useEffect(() => {
     const fetchImage = async () => {
       if (!network.imageCID) {
@@ -88,9 +81,7 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
 
       try {
         setImageLoading(true);
-        const response = await fetch(
-          `https://ipfs.io/ipfs/${network.imageCID}`
-        );
+        const response = await fetch(`https://ipfs.io/ipfs/${network.imageCID}`);
         if (!response.ok) throw new Error("Failed to fetch image");
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
@@ -140,25 +131,23 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
     }
   }, [contract, hasPaid, network.id]);
 
-  // Listen for payment events
   useEffect(() => {
     if (!contract || !address) return;
-    
+
     const handlePaymentSuccess = async (payer: string, networkId: string) => {
       if (
         payer.toLowerCase() === address.toLowerCase() &&
         networkId === network.id
       ) {
         setHasPaid(true);
-        setIsProcessingPayment(false);
+        setIsProcessing(false); // Reset on success
 
-        // Immediately try to decrypt password
         try {
           const password = await decryptPassword();
           setDecryptedPassword(password);
         } catch (err) {
           console.error("Failed to decrypt after payment:", err);
-          setIsProcessingPayment(false);
+          setIsProcessing(false);
         }
       }
     };
@@ -170,7 +159,6 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
     };
   }, [contract, address, network.id, decryptPassword]);
 
-  // Check initial payment status
   useEffect(() => {
     const checkPayment = async () => {
       if (!contract || !address) return;
@@ -197,6 +185,16 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
     fetchDecryptedPassword();
   }, [hasPaid, decryptPassword]);
 
+  const handleConnectClick = () => {
+    if (onConnect) {
+      setIsProcessing(true);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      onConnect(network, (success: boolean) => {
+        setIsProcessing(false); // Reset on completion (success or failure)
+      });
+    }
+  };
+
   return (
     <Card
       className={`relative overflow-hidden transition-all duration-300 bg-zaanet-purple-light ${
@@ -205,7 +203,6 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Image display or fallback */}
       <div className="relative h-40 w-full overflow-hidden">
         {imageLoading ? (
           <div
@@ -254,14 +251,12 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
       </CardHeader>
 
       <CardContent className="pt-0 flex flex-col gap-4">
-        {/* Network description */}
         {network.description && (
           <p className="text-sm text-gray-600 dark:text-gray-600">
             {network.description}
           </p>
         )}
 
-        {/* Network specs */}
         <div className="grid grid-cols-2 gap-3">
           <div className="flex items-center gap-2">
             <Gauge size={16} className="text-purple-500" />
@@ -283,7 +278,6 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
           </div>
         </div>
 
-        {/* Password section */}
         {hasPaid && (
           <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <div className="flex items-center justify-between">
@@ -350,15 +344,10 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
               ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800"
               : "bg-purple-600 hover:bg-purple-700 text-white"
           }`}
-          onClick={() => {
-            if (onConnect) {
-              setIsProcessingPayment(true);
-              onConnect(network);
-            }
-          }}
-          disabled={hasPaid || (isProcessingPayment && !stopProcessing)}
+          onClick={handleConnectClick}
+          disabled={hasPaid || isProcessing}
         >
-          {(isProcessingPayment && !stopProcessing) ? (
+          {isProcessing ? (
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>Processing...</span>
@@ -374,7 +363,6 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
         </Button>
       </CardFooter>
 
-      {/* Status badge */}
       {hasPaid && (
         <div className="absolute top-4 right-4 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
