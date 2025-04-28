@@ -14,6 +14,8 @@ import { ConnectButton } from './ConnectButton';
 import { LoadingSpinner } from '@/lib/LoadingSpinner';
 import DropdownMenu from '../layout/DropdownMenu';
 import { contract_Abi, contractAddress, loadContract } from '@/app/components/web3/contants';
+import { cn } from '@/lib/utils';
+import { Wallet } from 'lucide-react';
 
 interface ConnectBtnProps {
   backgroundColor?: string;
@@ -127,16 +129,28 @@ export const ConnectBtn = ({
         onClick={handleConnectClick}
         disabled={isConnecting}
         variant="outline"
-        className="bg-transparent border-zaanet-purple text-zaanet-purple hover:bg-zaanet-purple hover:text-white"
-      >
-        {isConnecting ? (
-          <div className="flex items-center gap-2">
-            <LoadingSpinner />
-            Connecting...
-          </div>
-        ) : (
-          'Connect Wallet'
+        size="lg"
+        className={cn(
+          "relative overflow-hidden",
+          "hover:bg-zaanet-purple-dark hover:border-zaanet-purple-dark hover:text-zaanet-purple-light",
+          "transition-all duration-300 ease-out transform hover:scale-[1.02]",
+          "focus:outline-none focus:ring-2 focus:ring-zaanet-purple focus:ring-offset-2",
+          "disabled:opacity-50 disabled:cursor-not-allowed"
         )}
+      >
+        <div className="flex items-center gap-2">
+          {isConnecting ? (
+            <>
+              <LoadingSpinner />
+              <span>Connecting...</span>
+            </>
+          ) : (
+            <>
+              <Wallet className="w-5 h-5" />
+              <span>Connect Wallet</span>
+            </>
+          )}
+        </div>
       </ConnectButton>
     );
   }
@@ -145,7 +159,11 @@ export const ConnectBtn = ({
     return (
       <Button
         onClick={openChainModal}
-        className="bg-red-500 hover:bg-red-600 text-white"
+        className={cn(
+          "bg-red-500 hover:bg-red-600 text-white",
+          "transition-all duration-300 ease-out transform hover:scale-[1.02]",
+          "focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+        )}
       >
         Wrong Network
       </Button>
@@ -158,10 +176,14 @@ export const ConnectBtn = ({
         role="button"
         tabIndex={0}
         aria-label="User menu"
-        className="h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-zaanet-purple"
+        className={cn(
+          "h-11 w-11 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden",
+          "cursor-pointer transition-transform duration-300",
+          "focus:outline-none focus:ring-2 focus:ring-zaanet-purple focus:ring-offset-2"
+        )}
         style={{
           backgroundColor,
-          boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+          boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
         }}
         onClick={() => setDropdownOpen(!dropdownOpen)}
         onKeyDown={(e) => e.key === 'Enter' && setDropdownOpen(!dropdownOpen)}

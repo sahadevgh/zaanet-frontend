@@ -13,7 +13,7 @@ const buttonVariants = cva(
       variant: {
         default: 'bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-500',
         ghost: 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300',
-        outline: 'border border-gray-300 dark:border-gray-600 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300',
+        outline: 'border border-zaanet-purple-dark hover:bg-zaanet-purple-dark bg-zaanet-purple-light border-2 border-zaanet-purple text-zaanet-purple-dark',
         destructive: 'bg-red-500 text-white hover:bg-red-600 dark:hover:bg-red-400',
       },
       size: {

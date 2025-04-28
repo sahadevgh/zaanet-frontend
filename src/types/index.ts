@@ -35,3 +35,19 @@ export interface User {
   sessions?: Session[];
   hostedNetworks?: WifiNetwork[];
 }
+
+export interface HostForm {
+  ssid: string;
+  password: string;
+  location: {
+    country: string;
+    city: string;
+    area: string;
+    lat: number;
+    lng: number;
+  };
+  speed: number;
+  price: number;
+  description?: string;
+  image?: File;
+}
