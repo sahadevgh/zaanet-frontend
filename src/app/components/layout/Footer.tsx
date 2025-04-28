@@ -27,13 +27,13 @@ const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/host" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
+                <Link href="/host-network" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
                   Become a Host
                 </Link>
               </li>
               <li>
-                <Link href="/pricing" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
-                  Pricing
+                <Link href="#" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
+                  Mint ZaaPass
                 </Link>
               </li>
             </ul>
@@ -43,17 +43,17 @@ const Footer: React.FC = () => {
             <h3 className="font-heading font-medium text-sm uppercase tracking-wider text-gray-900 mb-4">Resources</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/faq" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
+                <Link href="/#" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
                   FAQ
                 </Link>
               </li>
               <li>
-                <Link href="/support" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
+                <Link href="/#" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
                   Support
                 </Link>
               </li>
               <li>
-                <Link href="/blog" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
+                <Link href="/#" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
                   Blog
                 </Link>
               </li>
@@ -64,22 +64,22 @@ const Footer: React.FC = () => {
             <h3 className="font-heading font-medium text-sm uppercase tracking-wider text-gray-900 mb-4">Company</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/about" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
-                  About
+                <Link href="/litepaper" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
+                  Litepaper
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
+                <Link href="/#" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
                   Contact
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
+                <Link href="/#" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
                   Privacy
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
+                <Link href="/#" className="text-gray-600 hover:text-zaanet-purple text-sm transition-colors">
                   Terms
                 </Link>
               </li>
