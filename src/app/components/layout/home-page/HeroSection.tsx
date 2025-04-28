@@ -35,7 +35,7 @@ const HeroSection = () => {
               and help build a more connected world.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Link href="/discover">
+              <Link href="/browse">
                 <Button 
                   size="lg"
                   className="bg-zaanet-purple hover:bg-zaanet-purple-dark text-white w-full sm:w-auto
@@ -45,7 +45,7 @@ const HeroSection = () => {
                   Find WiFi
                 </Button>
               </Link>
-              <Link href="/host">
+              <Link href="/host-network">
                 <Button
                   size="lg"
                   variant="outline"

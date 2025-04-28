@@ -14,7 +14,7 @@ const CTASection = () => {
             <Link href="/browse">Find WiFi</Link>
           </Button>
           <Button variant="outline" className="bg-zaanet-purple dark:bg-zaanet-purple-dark border-white text-white hover:bg-white hover:text-zaanet-purple px-8 py-6 font-medium">
-            <Link href="/host">Become a Host</Link>
+            <Link href="/host-network">Become a Host</Link>
           </Button>
         </div>
       </div>
