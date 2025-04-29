@@ -55,6 +55,12 @@ export default function GuestSession() {
 
   useEffect(() => {
     // Calculate total session time in seconds
+    const testtime = mockSession.endTime.getTime()
+    const testtime2 = mockSession.startTime
+
+    console.log(testtime)
+    console.log(testtime2)
+
     const totalSessionTime = (mockSession.endTime.getTime() - mockSession.startTime.getTime()) / 1000
     setTotalTime(totalSessionTime)
 

@@ -10,12 +10,23 @@ import {
   contract_Abi,
   contractAddress,
   loadContract,
+  usdtAbi,
+  usdtContractAddress,
 } from "@/app/components/web3/contants";
 import { ethers } from "ethers";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { useAccount, useWalletClient } from "wagmi";
 import { toast } from "@/hooks/use-toast";
 import CryptoJS from "crypto-js";
+import ConnectManager from "../../wifi/ConnectManager";
+
+
+ // HANDLE CONNECTION
+ interface HandleConnectParams {
+  network: WifiNetwork;
+  totalPrice: ethers.BigNumberish;
+  onComplete: (success: boolean) => void;
+}
 
 export const NetworkCardSkeleton = () => {
   return (
@@ -40,6 +51,9 @@ export default function BrowseNetworksPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
+  const [openConManagerModal, setOpenConManagerModal] = useState(false)
+const [isSetNetwork, setIsSetNetwork] = useState<WifiNetwork | null>(null);
+console.log(isSetNetwork)
 
   async function getAllHostedNetworksByIds(id: number) {
     const contractInstance = await loadContract({
@@ -110,100 +124,116 @@ export default function BrowseNetworksPage() {
   }, []);
 
 
-
- // HANDLE CONNECTION
-  async function handleConnect(
-    network: WifiNetwork,
-    onComplete: (success: boolean) => void
-  ) {
+  async function handleConnect({
+    network,
+    totalPrice,
+    onComplete,
+  }: HandleConnectParams): Promise<void> {
     if (!isConnected || !address) {
       toast({
         title: "Error",
         description: "Please connect your wallet first.",
         variant: "destructive",
       });
-      onComplete(false); // Notify failure
+      onComplete(false);
       return;
     }
-
+  
     const contractInstance = await loadContract({
       contractAddress,
       contractABI: contract_Abi,
       withSigner: true,
     });
-
+  
     if (!contractInstance || !walletClient) {
       toast({
         title: "Error",
         description: "Contract or wallet not loaded.",
         variant: "destructive",
       });
-      onComplete(false); // Notify failure
+      onComplete(false);
       return;
     }
-
+  
     try {
-      const networkData = await contractInstance.getHostedNetworkById(
-        network.id
-      );
-      if (!networkData.isActive) {
-        throw new Error("Network is not active");
-      }
-      if (Number(networkData.id) === 0) {
-        throw new Error("Network does not exist");
-      }
-
+      const networkData: {
+        id: number;
+        isActive: boolean;
+      } = await contractInstance.getHostedNetworkById(network.id);
+  
+      if (!networkData.isActive) throw new Error("Network is not active");
+      if (Number(networkData.id) === 0) throw new Error("Network does not exist");
+  
       let passwordCID: string;
-      const hasPaid = await contractInstance.hasPaid(network.id, address);
+      const hasPaid: boolean = await contractInstance.hasPaid(network.id, address);
       if (hasPaid) {
         passwordCID = await contractInstance.getPasswordCID(network.id);
       } else {
-        const priceInETH = ethers.parseEther(network.price);
-
-        const tx = await contractInstance.acceptPayment(network.id, {
-          value: priceInETH,
+        const usdtContract = await loadContract({
+          contractAddress: usdtContractAddress,
+          contractABI: usdtAbi,
+          withSigner: true,
+        });
+  
+        // 1. Approve Zaanet contract to spend USDT
+        const approveTx = await usdtContract?.approve(
+          contractInstance.target,
+          totalPrice
+        );
+  
+        toast({
+          title: "Approval Sent",
+          description: `Approving ZaaNet to spend your USDT...`,
+        });
+  
+        await approveTx.wait();
+  
+        // 2. Call acceptPayment (ERC20, no value)
+        const tx = await contractInstance.acceptPayment(network.id, totalPrice, {
           gasLimit: 200_000,
         });
-
+  
         toast({
           title: "Payment Sent",
           description: `Processing payment for ${network.name}...`,
         });
-
+  
         await tx.wait();
+  
         passwordCID = await contractInstance.getPasswordCID(network.id);
       }
-
+  
       if (!passwordCID.match(/^(Qm[1-9A-Za-z]{44}|bafy[0-9a-z]{50})$/)) {
         throw new Error("Invalid IPFS CID");
       }
-
+  
       const response = await fetch(`https://ipfs.io/ipfs/${passwordCID}`);
       if (!response.ok) throw new Error("Failed to fetch password from IPFS");
-      const encryptedPassword = await response.text();
-
+      const encryptedPassword: string = await response.text();
+  
       const secretKey = process.env.NEXT_PUBLIC_CRYPTOJS_SECRET_KEY!;
       if (!secretKey) throw new Error("Decryption key not set in environment");
-
+  
       const decryptedBytes = CryptoJS.AES.decrypt(encryptedPassword, secretKey);
       const password = decryptedBytes.toString(CryptoJS.enc.Utf8);
       if (!password) throw new Error("Failed to decrypt password");
-
+  
       setAvailableNetworks((prev) =>
         prev.map((n) => (n.id === network.id ? { ...n, password } : n))
       );
-
+  
       setTimeout(() => fetchHostedNetworks(), 3000);
-
+  
       toast({
         title: "Success",
         description: `Connected to ${network.name}. Password: ${password}`,
       });
-      onComplete(true); // Notify success
+      onComplete(true);
     } catch (error: unknown) {
       console.error("Connection error:", error);
       let errorMessage =
-        "Failed to connect to network. Check your balance or network status.";
+        "Failed to connect to network. Check your USDT balance or approval.";
+  
       if (error instanceof Error) {
         const message = error.message;
         if (message.includes("Network does not exist"))
@@ -219,13 +249,13 @@ export default function BrowseNetworksPage() {
         else if (message.includes("Decryption key"))
           errorMessage = "Decryption key is missing in environment.";
       }
-
+  
       toast({
         title: "Error",
         description: errorMessage,
         variant: "destructive",
       });
-      onComplete(false); // Notify failure
+      onComplete(false);
     }
   }
 
@@ -331,8 +361,9 @@ export default function BrowseNetworksPage() {
                 network={network}
                 address={address || ""}
                 contract={contract}
-                onConnect={handleConnect}
-              />
+                setIsSetNetwork={setIsSetNetwork}
+                setOpenConManagerModal={setOpenConManagerModal}
+                />
             ))
           ) : (
             <p className="text-gray-900 col-span-full text-center">
@@ -340,6 +371,18 @@ export default function BrowseNetworksPage() {
             </p>
           )}
         </div>
+      )}
+
+{openConManagerModal && isSetNetwork && (
+        <>
+          <ConnectManager 
+            isSetNetwork={isSetNetwork}
+            setOpenConManagerModal={setOpenConManagerModal}
+            onConnect={(network, totalPrice, onComplete) =>
+              handleConnect({ network, totalPrice, onComplete })
+            }
+          />
+        </>
       )}
     </div>
   );

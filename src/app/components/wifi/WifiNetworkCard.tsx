@@ -29,11 +29,9 @@ interface WifiNetworkCardProps {
   network: WifiNetwork;
   address: string;
   contract: ethers.Contract | null;
-  onConnect?: (
-    network: WifiNetwork,
-    onComplete: (success: boolean) => void
-  ) => void; 
-}
+  setOpenConManagerModal: (value: boolean) => void;
+  setIsSetNetwork: (network: WifiNetwork) => void;
+ }
 
 const getGradientClass = (id: string) => {
   let hash = 0;
@@ -59,7 +57,8 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
   network,
   address,
   contract,
-  onConnect,
+  setOpenConManagerModal,
+  setIsSetNetwork
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [hasPaid, setHasPaid] = useState(false);
@@ -68,7 +67,6 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isDecrypting, setIsDecrypting] = useState(false);
 
   useEffect(() => {
@@ -140,14 +138,11 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
         networkId === network.id
       ) {
         setHasPaid(true);
-        setIsProcessing(false); // Reset on success
-
         try {
           const password = await decryptPassword();
           setDecryptedPassword(password);
         } catch (err) {
           console.error("Failed to decrypt after payment:", err);
-          setIsProcessing(false);
         }
       }
     };
@@ -185,15 +180,6 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
     fetchDecryptedPassword();
   }, [hasPaid, decryptPassword]);
 
-  const handleConnectClick = () => {
-    if (onConnect) {
-      setIsProcessing(true);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      onConnect(network, (success: boolean) => {
-        setIsProcessing(false); // Reset on completion (success or failure)
-      });
-    }
-  };
 
   return (
     <Card
@@ -333,7 +319,7 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
             {network.location.lng.toFixed(4)}
           </span>
           <span className="text-lg font-bold text-purple-600 dark:text-purple-400">
-            {network.price} ETH
+            {ethers.parseUnits(network.price)} USDT
           </span>
         </div>
 
@@ -344,15 +330,13 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
               ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800"
               : "bg-purple-600 hover:bg-purple-700 text-white"
           }`}
-          onClick={handleConnectClick}
-          disabled={hasPaid || isProcessing}
+          onClick={() => {
+            setIsSetNetwork(network)
+            setOpenConManagerModal(true);
+          }}
+          disabled={hasPaid}
         >
-          {isProcessing ? (
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Processing...</span>
-            </div>
-          ) : hasPaid ? (
+          {hasPaid ? (
             <div className="flex items-center gap-2">
               <span>Connected</span>
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />

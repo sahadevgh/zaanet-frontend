@@ -4,972 +4,985 @@ import { ethers } from "ethers";
 import { toast } from "@/hooks/use-toast";
 
 // Application main contract address
-export const contractAddress = "0x72AD0FAb5b1046b1A95a3f6a1664431E85F561aa";
+export const contractAddress = "0xCc2b7D90799B58Aa275321D60D72464A0E0a056c";
+export const usdtContractAddress = "0xBD3822E1949DD2E187da0c3a0F8585f60D512D91"
 
 export const contract_Abi = [
   {
-    inputs: [],
-    stateMutability: "nonpayable",
-    type: "constructor",
-  },
-  {
-    inputs: [],
-    name: "EnforcedPause",
-    type: "error",
-  },
-  {
-    inputs: [],
-    name: "ExpectedPause",
-    type: "error",
-  },
-  {
-    inputs: [],
-    name: "ReentrancyGuardReentrantCall",
-    type: "error",
-  },
-  {
-    anonymous: false,
-    inputs: [
+    "inputs": [
       {
-        indexed: false,
-        internalType: "uint256",
-        name: "newFeePercent",
-        type: "uint256",
-      },
+        "internalType": "address",
+        "name": "_usdtToken",
+        "type": "address"
+      }
     ],
-    name: "FeePercentUpdated",
-    type: "event",
+    "stateMutability": "nonpayable",
+    "type": "constructor"
   },
   {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "id",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "address",
-        name: "hostAddress",
-        type: "address",
-      },
-    ],
-    name: "HostDeleted",
-    type: "event",
+    "inputs": [],
+    "name": "EnforcedPause",
+    "type": "error"
   },
   {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "id",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "address",
-        name: "hostAddress",
-        type: "address",
-      },
-    ],
-    name: "HostedNetworkUpdated",
-    type: "event",
+    "inputs": [],
+    "name": "ExpectedPause",
+    "type": "error"
   },
   {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "id",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "address",
-        name: "hostAddress",
-        type: "address",
-      },
-    ],
-    name: "NewNetworkHosted",
-    type: "event",
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
+    "type": "error"
   },
   {
-    anonymous: false,
-    inputs: [
+    "anonymous": false,
+    "inputs": [
       {
-        indexed: false,
-        internalType: "address",
-        name: "account",
-        type: "address",
-      },
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newFeePercent",
+        "type": "uint256"
+      }
     ],
-    name: "Paused",
-    type: "event",
+    "name": "FeePercentUpdated",
+    "type": "event"
   },
   {
-    anonymous: false,
-    inputs: [
+    "anonymous": false,
+    "inputs": [
       {
-        indexed: false,
-        internalType: "uint256",
-        name: "id",
-        type: "uint256",
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
       },
       {
-        indexed: false,
-        internalType: "address",
-        name: "user",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "amount",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
+        "indexed": false,
+        "internalType": "address",
+        "name": "hostAddress",
+        "type": "address"
+      }
     ],
-    name: "PaymentReceived",
-    type: "event",
+    "name": "HostDeleted",
+    "type": "event"
   },
   {
-    anonymous: false,
-    inputs: [
+    "anonymous": false,
+    "inputs": [
       {
-        indexed: false,
-        internalType: "address",
-        name: "account",
-        type: "address",
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
       },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "hostAddress",
+        "type": "address"
+      }
     ],
-    name: "Unpaused",
-    type: "event",
+    "name": "HostedNetworkUpdated",
+    "type": "event"
   },
   {
-    inputs: [],
-    name: "MAX_HOSTS",
-    outputs: [
+    "anonymous": false,
+    "inputs": [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
       },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "hostAddress",
+        "type": "address"
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    "name": "NewNetworkHosted",
+    "type": "event"
   },
   {
-    inputs: [
+    "anonymous": false,
+    "inputs": [
       {
-        internalType: "uint256",
-        name: "_id",
-        type: "uint256",
-      },
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
     ],
-    name: "acceptPayment",
-    outputs: [],
-    stateMutability: "payable",
-    type: "function",
+    "name": "Paused",
+    "type": "event"
   },
   {
-    inputs: [
+    "anonymous": false,
+    "inputs": [
       {
-        internalType: "uint256",
-        name: "_id",
-        type: "uint256",
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
       },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
     ],
-    name: "deleteHostedNetwork",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
+    "name": "PaymentReceived",
+    "type": "event"
   },
   {
-    inputs: [
+    "anonymous": false,
+    "inputs": [
       {
-        internalType: "uint256",
-        name: "_id",
-        type: "uint256",
-      },
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
     ],
-    name: "getHostedNetworkById",
-    outputs: [
+    "name": "Unpaused",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_HOSTS",
+    "outputs": [
       {
-        components: [
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "acceptPayment",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      }
+    ],
+    "name": "deleteHostedNetwork",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      }
+    ],
+    "name": "getHostedNetworkById",
+    "outputs": [
+      {
+        "components": [
           {
-            internalType: "uint256",
-            name: "id",
-            type: "uint256",
+            "internalType": "uint256",
+            "name": "id",
+            "type": "uint256"
           },
           {
-            internalType: "address",
-            name: "hostAddress",
-            type: "address",
+            "internalType": "address",
+            "name": "hostAddress",
+            "type": "address"
           },
           {
-            internalType: "string",
-            name: "name",
-            type: "string",
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "passwordCID",
-            type: "string",
+            "internalType": "string",
+            "name": "passwordCID",
+            "type": "string"
           },
           {
-            components: [
+            "components": [
               {
-                internalType: "string",
-                name: "city",
-                type: "string",
+                "internalType": "string",
+                "name": "city",
+                "type": "string"
               },
               {
-                internalType: "string",
-                name: "country",
-                type: "string",
+                "internalType": "string",
+                "name": "country",
+                "type": "string"
               },
               {
-                internalType: "string",
-                name: "area",
-                type: "string",
+                "internalType": "string",
+                "name": "area",
+                "type": "string"
               },
               {
-                internalType: "string",
-                name: "latitude",
-                type: "string",
+                "internalType": "string",
+                "name": "latitude",
+                "type": "string"
               },
               {
-                internalType: "string",
-                name: "longitude",
-                type: "string",
-              },
+                "internalType": "string",
+                "name": "longitude",
+                "type": "string"
+              }
             ],
-            internalType: "struct ZaanetContract.Location",
-            name: "location",
-            type: "tuple",
+            "internalType": "struct ZaanetContract.Location",
+            "name": "location",
+            "type": "tuple"
           },
           {
-            internalType: "string",
-            name: "wifispeed",
-            type: "string",
+            "internalType": "string",
+            "name": "wifispeed",
+            "type": "string"
           },
           {
-            internalType: "uint256",
-            name: "price",
-            type: "uint256",
+            "internalType": "uint256",
+            "name": "price",
+            "type": "uint256"
           },
           {
-            internalType: "string",
-            name: "description",
-            type: "string",
+            "internalType": "string",
+            "name": "description",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "imageCID",
-            type: "string",
+            "internalType": "string",
+            "name": "imageCID",
+            "type": "string"
           },
           {
-            internalType: "bool",
-            name: "isActive",
-            type: "bool",
+            "internalType": "bool",
+            "name": "isActive",
+            "type": "bool"
           },
           {
-            internalType: "uint256",
-            name: "createdAt",
-            type: "uint256",
+            "internalType": "uint256",
+            "name": "createdAt",
+            "type": "uint256"
           },
           {
-            internalType: "uint256",
-            name: "updatedAt",
-            type: "uint256",
-          },
+            "internalType": "uint256",
+            "name": "updatedAt",
+            "type": "uint256"
+          }
         ],
-        internalType: "struct ZaanetContract.ZaanetHost",
-        name: "",
-        type: "tuple",
-      },
+        "internalType": "struct ZaanetContract.ZaanetHost",
+        "name": "",
+        "type": "tuple"
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: "address",
-        name: "_host",
-        type: "address",
-      },
+        "internalType": "address",
+        "name": "_host",
+        "type": "address"
+      }
     ],
-    name: "getHostedNetworksByAddress",
-    outputs: [
+    "name": "getHostedNetworksByAddress",
+    "outputs": [
       {
-        components: [
+        "components": [
           {
-            internalType: "uint256",
-            name: "id",
-            type: "uint256",
+            "internalType": "uint256",
+            "name": "id",
+            "type": "uint256"
           },
           {
-            internalType: "address",
-            name: "hostAddress",
-            type: "address",
+            "internalType": "address",
+            "name": "hostAddress",
+            "type": "address"
           },
           {
-            internalType: "string",
-            name: "name",
-            type: "string",
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "passwordCID",
-            type: "string",
+            "internalType": "string",
+            "name": "passwordCID",
+            "type": "string"
           },
           {
-            components: [
+            "components": [
               {
-                internalType: "string",
-                name: "city",
-                type: "string",
+                "internalType": "string",
+                "name": "city",
+                "type": "string"
               },
               {
-                internalType: "string",
-                name: "country",
-                type: "string",
+                "internalType": "string",
+                "name": "country",
+                "type": "string"
               },
               {
-                internalType: "string",
-                name: "area",
-                type: "string",
+                "internalType": "string",
+                "name": "area",
+                "type": "string"
               },
               {
-                internalType: "string",
-                name: "latitude",
-                type: "string",
+                "internalType": "string",
+                "name": "latitude",
+                "type": "string"
               },
               {
-                internalType: "string",
-                name: "longitude",
-                type: "string",
-              },
+                "internalType": "string",
+                "name": "longitude",
+                "type": "string"
+              }
             ],
-            internalType: "struct ZaanetContract.Location",
-            name: "location",
-            type: "tuple",
+            "internalType": "struct ZaanetContract.Location",
+            "name": "location",
+            "type": "tuple"
           },
           {
-            internalType: "string",
-            name: "wifispeed",
-            type: "string",
+            "internalType": "string",
+            "name": "wifispeed",
+            "type": "string"
           },
           {
-            internalType: "uint256",
-            name: "price",
-            type: "uint256",
+            "internalType": "uint256",
+            "name": "price",
+            "type": "uint256"
           },
           {
-            internalType: "string",
-            name: "description",
-            type: "string",
+            "internalType": "string",
+            "name": "description",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "imageCID",
-            type: "string",
+            "internalType": "string",
+            "name": "imageCID",
+            "type": "string"
           },
           {
-            internalType: "bool",
-            name: "isActive",
-            type: "bool",
+            "internalType": "bool",
+            "name": "isActive",
+            "type": "bool"
           },
           {
-            internalType: "uint256",
-            name: "createdAt",
-            type: "uint256",
+            "internalType": "uint256",
+            "name": "createdAt",
+            "type": "uint256"
           },
           {
-            internalType: "uint256",
-            name: "updatedAt",
-            type: "uint256",
-          },
+            "internalType": "uint256",
+            "name": "updatedAt",
+            "type": "uint256"
+          }
         ],
-        internalType: "struct ZaanetContract.ZaanetHost[]",
-        name: "",
-        type: "tuple[]",
-      },
+        "internalType": "struct ZaanetContract.ZaanetHost[]",
+        "name": "",
+        "type": "tuple[]"
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: "uint256",
-        name: "_id",
-        type: "uint256",
-      },
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      }
     ],
-    name: "getPasswordCID",
-    outputs: [
+    "name": "getPasswordCID",
+    "outputs": [
       {
-        internalType: "string",
-        name: "",
-        type: "string",
-      },
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       },
       {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
     ],
-    name: "hasPaid",
-    outputs: [
+    "name": "hasPaid",
+    "outputs": [
       {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: "string",
-        name: "_name",
-        type: "string",
+        "internalType": "string",
+        "name": "_name",
+        "type": "string"
       },
       {
-        internalType: "string",
-        name: "_passwordCID",
-        type: "string",
+        "internalType": "string",
+        "name": "_passwordCID",
+        "type": "string"
       },
       {
-        internalType: "string",
-        name: "_city",
-        type: "string",
+        "internalType": "string",
+        "name": "_city",
+        "type": "string"
       },
       {
-        internalType: "string",
-        name: "_country",
-        type: "string",
+        "internalType": "string",
+        "name": "_country",
+        "type": "string"
       },
       {
-        internalType: "string",
-        name: "_area",
-        type: "string",
+        "internalType": "string",
+        "name": "_area",
+        "type": "string"
       },
       {
-        internalType: "string",
-        name: "_latitude",
-        type: "string",
+        "internalType": "string",
+        "name": "_latitude",
+        "type": "string"
       },
       {
-        internalType: "string",
-        name: "_longitude",
-        type: "string",
+        "internalType": "string",
+        "name": "_longitude",
+        "type": "string"
       },
       {
-        internalType: "string",
-        name: "_wifispeed",
-        type: "string",
+        "internalType": "string",
+        "name": "_wifispeed",
+        "type": "string"
       },
       {
-        internalType: "uint256",
-        name: "_price",
-        type: "uint256",
+        "internalType": "uint256",
+        "name": "_price",
+        "type": "uint256"
       },
       {
-        internalType: "string",
-        name: "_description",
-        type: "string",
+        "internalType": "string",
+        "name": "_description",
+        "type": "string"
       },
       {
-        internalType: "string",
-        name: "_imageCID",
-        type: "string",
-      },
+        "internalType": "string",
+        "name": "_imageCID",
+        "type": "string"
+      }
     ],
-    name: "hostANetwork",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
+    "name": "hostANetwork",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
     ],
-    name: "hostedNetworkById",
-    outputs: [
+    "name": "hostedNetworkById",
+    "outputs": [
       {
-        internalType: "uint256",
-        name: "id",
-        type: "uint256",
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
       },
       {
-        internalType: "address",
-        name: "hostAddress",
-        type: "address",
+        "internalType": "address",
+        "name": "hostAddress",
+        "type": "address"
       },
       {
-        internalType: "string",
-        name: "name",
-        type: "string",
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
       },
       {
-        internalType: "string",
-        name: "passwordCID",
-        type: "string",
+        "internalType": "string",
+        "name": "passwordCID",
+        "type": "string"
       },
       {
-        components: [
+        "components": [
           {
-            internalType: "string",
-            name: "city",
-            type: "string",
+            "internalType": "string",
+            "name": "city",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "country",
-            type: "string",
+            "internalType": "string",
+            "name": "country",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "area",
-            type: "string",
+            "internalType": "string",
+            "name": "area",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "latitude",
-            type: "string",
+            "internalType": "string",
+            "name": "latitude",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "longitude",
-            type: "string",
-          },
+            "internalType": "string",
+            "name": "longitude",
+            "type": "string"
+          }
         ],
-        internalType: "struct ZaanetContract.Location",
-        name: "location",
-        type: "tuple",
+        "internalType": "struct ZaanetContract.Location",
+        "name": "location",
+        "type": "tuple"
       },
       {
-        internalType: "string",
-        name: "wifispeed",
-        type: "string",
+        "internalType": "string",
+        "name": "wifispeed",
+        "type": "string"
       },
       {
-        internalType: "uint256",
-        name: "price",
-        type: "uint256",
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
       },
       {
-        internalType: "string",
-        name: "description",
-        type: "string",
+        "internalType": "string",
+        "name": "description",
+        "type": "string"
       },
       {
-        internalType: "string",
-        name: "imageCID",
-        type: "string",
+        "internalType": "string",
+        "name": "imageCID",
+        "type": "string"
       },
       {
-        internalType: "bool",
-        name: "isActive",
-        type: "bool",
+        "internalType": "bool",
+        "name": "isActive",
+        "type": "bool"
       },
       {
-        internalType: "uint256",
-        name: "createdAt",
-        type: "uint256",
+        "internalType": "uint256",
+        "name": "createdAt",
+        "type": "uint256"
       },
       {
-        internalType: "uint256",
-        name: "updatedAt",
-        type: "uint256",
-      },
+        "internalType": "uint256",
+        "name": "updatedAt",
+        "type": "uint256"
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: "address",
-        name: "",
-        type: "address",
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       },
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
     ],
-    name: "hostedNetworksByAddress",
-    outputs: [
+    "name": "hostedNetworksByAddress",
+    "outputs": [
       {
-        internalType: "uint256",
-        name: "id",
-        type: "uint256",
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
       },
       {
-        internalType: "address",
-        name: "hostAddress",
-        type: "address",
+        "internalType": "address",
+        "name": "hostAddress",
+        "type": "address"
       },
       {
-        internalType: "string",
-        name: "name",
-        type: "string",
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
       },
       {
-        internalType: "string",
-        name: "passwordCID",
-        type: "string",
+        "internalType": "string",
+        "name": "passwordCID",
+        "type": "string"
       },
       {
-        components: [
+        "components": [
           {
-            internalType: "string",
-            name: "city",
-            type: "string",
+            "internalType": "string",
+            "name": "city",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "country",
-            type: "string",
+            "internalType": "string",
+            "name": "country",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "area",
-            type: "string",
+            "internalType": "string",
+            "name": "area",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "latitude",
-            type: "string",
+            "internalType": "string",
+            "name": "latitude",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "longitude",
-            type: "string",
-          },
+            "internalType": "string",
+            "name": "longitude",
+            "type": "string"
+          }
         ],
-        internalType: "struct ZaanetContract.Location",
-        name: "location",
-        type: "tuple",
+        "internalType": "struct ZaanetContract.Location",
+        "name": "location",
+        "type": "tuple"
       },
       {
-        internalType: "string",
-        name: "wifispeed",
-        type: "string",
+        "internalType": "string",
+        "name": "wifispeed",
+        "type": "string"
       },
       {
-        internalType: "uint256",
-        name: "price",
-        type: "uint256",
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
       },
       {
-        internalType: "string",
-        name: "description",
-        type: "string",
+        "internalType": "string",
+        "name": "description",
+        "type": "string"
       },
       {
-        internalType: "string",
-        name: "imageCID",
-        type: "string",
+        "internalType": "string",
+        "name": "imageCID",
+        "type": "string"
       },
       {
-        internalType: "bool",
-        name: "isActive",
-        type: "bool",
+        "internalType": "bool",
+        "name": "isActive",
+        "type": "bool"
       },
       {
-        internalType: "uint256",
-        name: "createdAt",
-        type: "uint256",
+        "internalType": "uint256",
+        "name": "createdAt",
+        "type": "uint256"
       },
       {
-        internalType: "uint256",
-        name: "updatedAt",
-        type: "uint256",
-      },
+        "internalType": "uint256",
+        "name": "updatedAt",
+        "type": "uint256"
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
     ],
-    name: "isHost",
-    outputs: [
+    "name": "isHost",
+    "outputs": [
       {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [],
-    name: "networkIdCounter",
-    outputs: [
+    "inputs": [],
+    "name": "networkIdCounter",
+    "outputs": [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: "address",
-        name: "",
-        type: "address",
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       },
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
     ],
-    name: "networkIdsByAddress",
-    outputs: [
+    "name": "networkIdsByAddress",
+    "outputs": [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [],
-    name: "owner",
-    outputs: [
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
       {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [],
-    name: "pause",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
+    "inputs": [],
+    "name": "paused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [],
-    name: "paused",
-    outputs: [
+    "inputs": [
       {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    "name": "totalEarnedByAddress",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
     ],
-    name: "totalEarnedByAddress",
-    outputs: [
+    "name": "totalEarnedByHostedNetwork",
+    "outputs": [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    name: "totalEarnedByHostedNetwork",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "unpause",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_id",
-        type: "uint256",
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
       },
       {
-        components: [
+        "components": [
           {
-            internalType: "string",
-            name: "name",
-            type: "string",
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "passwordCID",
-            type: "string",
+            "internalType": "string",
+            "name": "passwordCID",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "city",
-            type: "string",
+            "internalType": "string",
+            "name": "city",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "country",
-            type: "string",
+            "internalType": "string",
+            "name": "country",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "area",
-            type: "string",
+            "internalType": "string",
+            "name": "area",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "latitude",
-            type: "string",
+            "internalType": "string",
+            "name": "latitude",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "longitude",
-            type: "string",
+            "internalType": "string",
+            "name": "longitude",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "wifispeed",
-            type: "string",
+            "internalType": "string",
+            "name": "wifispeed",
+            "type": "string"
           },
           {
-            internalType: "uint256",
-            name: "price",
-            type: "uint256",
+            "internalType": "uint256",
+            "name": "price",
+            "type": "uint256"
           },
           {
-            internalType: "string",
-            name: "description",
-            type: "string",
+            "internalType": "string",
+            "name": "description",
+            "type": "string"
           },
           {
-            internalType: "string",
-            name: "imageCID",
-            type: "string",
+            "internalType": "string",
+            "name": "imageCID",
+            "type": "string"
           },
           {
-            internalType: "bool",
-            name: "isActive",
-            type: "bool",
-          },
+            "internalType": "bool",
+            "name": "isActive",
+            "type": "bool"
+          }
         ],
-        internalType: "struct ZaanetContract.UpdateNetworkParams",
-        name: "params",
-        type: "tuple",
-      },
+        "internalType": "struct ZaanetContract.UpdateNetworkParams",
+        "name": "params",
+        "type": "tuple"
+      }
     ],
-    name: "updateHostedNetwork",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
+    "name": "updateHostedNetwork",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: "uint256",
-        name: "_newFeePercent",
-        type: "uint256",
-      },
+        "internalType": "uint256",
+        "name": "_newFeePercent",
+        "type": "uint256"
+      }
     ],
-    name: "updateZaanetFeePercent",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
+    "name": "updateZaanetFeePercent",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
-    inputs: [],
-    name: "withdrawFees",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "zaanetFeePercent",
-    outputs: [
+    "inputs": [],
+    "name": "usdtToken",
+    "outputs": [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        "internalType": "contract IERC20",
+        "name": "",
+        "type": "address"
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    "stateMutability": "view",
+    "type": "function"
   },
+  {
+    "inputs": [],
+    "name": "withdrawFees",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "zaanetFeePercent",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
 ];
+
+
 
 export const loadContract = async ({
   contractAddress,
@@ -1076,4 +1089,344 @@ export async function uploadImageToIPFS(file: File): Promise<string> {
     }
     return result.IpfsHash;
   }
+
+  export const usdtAbi = [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "initialSupply",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "allowance",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "needed",
+          "type": "uint256"
+        }
+      ],
+      "name": "ERC20InsufficientAllowance",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "balance",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "needed",
+          "type": "uint256"
+        }
+      ],
+      "name": "ERC20InsufficientBalance",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "approver",
+          "type": "address"
+        }
+      ],
+      "name": "ERC20InvalidApprover",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "receiver",
+          "type": "address"
+        }
+      ],
+      "name": "ERC20InvalidReceiver",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
+      "name": "ERC20InvalidSender",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        }
+      ],
+      "name": "ERC20InvalidSpender",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "Approval",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "Transfer",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        }
+      ],
+      "name": "allowance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "approve",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "balanceOf",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "decimals",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "mint",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "name",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "symbol",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalSupply",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "transfer",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferFrom",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ]
   

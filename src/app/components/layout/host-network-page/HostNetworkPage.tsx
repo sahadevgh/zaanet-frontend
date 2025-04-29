@@ -27,7 +27,7 @@ const hostSchema = z.object({
     lng: z.number().min(-180).max(180, "Invalid longitude"),
   }),
   speed: z.coerce.number().min(1, "Minimum 1 Mbps"),
-  price: z.coerce.number().min(0.002, "Set at least 0.1 USDT"),
+  price: z.coerce.number().min(0.1, "Set at least 0.1 USDT"),
   description: z.string().max(500, "Description too long").optional(),
   image: z.instanceof(File).refine((file) => file.size < 2 * 1024 * 1024, "Image must be under 2MB").optional(),
 });
@@ -46,7 +46,7 @@ export default function HostNetworkPage() {
       password: "",
       location: { country: "", city: "", area: "", lat: 5.6037, lng: -0.187 },
       speed: 25,
-      price: 0.002,
+      price: 1,
       description: "",
       image: undefined,
     },
@@ -61,6 +61,7 @@ export default function HostNetworkPage() {
       const contractInstance = await loadContract({
         contractAddress,
         contractABI: contract_Abi,
+        withSigner: true
       });
       if (contractInstance) {
         setContract(contractInstance);
@@ -83,7 +84,7 @@ export default function HostNetworkPage() {
       if (!contract) {
         toast({
           title: "Error",
-          description: "Blockchain contract not loaded. Please try again.",
+          description: "Contract or wallet not loaded.",
           variant: "destructive",
         });
         onComplete(false);
@@ -137,7 +138,7 @@ export default function HostNetworkPage() {
         data.location.lat.toString(),
         data.location.lng.toString(),
         data.speed.toString(),
-        ethers.parseUnits(data.price.toString(), 18),
+        data.price,
         data.description || "",
         imageCID || ""
       );
