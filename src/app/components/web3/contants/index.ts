@@ -4,7 +4,7 @@ import { ethers } from "ethers";
 import { toast } from "@/hooks/use-toast";
 
 // Application main contract address
-export const contractAddress = "0xCc2b7D90799B58Aa275321D60D72464A0E0a056c";
+export const contractAddress = "0xE76aA8747052075c1adFcA80478095fAB1702Cf2";
 export const usdtContractAddress = "0xBD3822E1949DD2E187da0c3a0F8585f60D512D91"
 
 export const contract_Abi = [
@@ -184,6 +184,11 @@ export const contract_Abi = [
       {
         "internalType": "uint256",
         "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "duration",
         "type": "uint256"
       }
     ],
@@ -855,99 +860,6 @@ export const contract_Abi = [
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_id",
-        "type": "uint256"
-      },
-      {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "passwordCID",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "city",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "country",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "area",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "latitude",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "longitude",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "wifispeed",
-            "type": "string"
-          },
-          {
-            "internalType": "uint256",
-            "name": "price",
-            "type": "uint256"
-          },
-          {
-            "internalType": "string",
-            "name": "description",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "imageCID",
-            "type": "string"
-          },
-          {
-            "internalType": "bool",
-            "name": "isActive",
-            "type": "bool"
-          }
-        ],
-        "internalType": "struct ZaanetContract.UpdateNetworkParams",
-        "name": "params",
-        "type": "tuple"
-      }
-    ],
-    "name": "updateHostedNetwork",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_newFeePercent",
-        "type": "uint256"
-      }
-    ],
-    "name": "updateZaanetFeePercent",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [],
     "name": "usdtToken",
     "outputs": [
@@ -958,13 +870,6 @@ export const contract_Abi = [
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "withdrawFees",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -981,8 +886,6 @@ export const contract_Abi = [
     "type": "function"
   }
 ];
-
-
 
 export const loadContract = async ({
   contractAddress,

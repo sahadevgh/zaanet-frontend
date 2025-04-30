@@ -18,6 +18,7 @@ export type WifiNetwork = {
   imageCID: string;
   hasPaid?: boolean;
   type: string;
+  wifispeed?: number;
 };
 
 export interface Session {

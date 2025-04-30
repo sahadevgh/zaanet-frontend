@@ -129,6 +129,9 @@ export default function HostNetworkPage() {
         throw new Error("Invalid IPFS CID for password");
       }
 
+      const priceString = Number(data.price).toFixed(18); // convert float safely
+      const amountToSend = ethers.parseUnits(priceString, 18);
+      
       const tx = await contract.hostANetwork(
         data.ssid,
         passwordCID,
@@ -138,7 +141,7 @@ export default function HostNetworkPage() {
         data.location.lat.toString(),
         data.location.lng.toString(),
         data.speed.toString(),
-        data.price,
+        amountToSend,
         data.description || "",
         imageCID || ""
       );

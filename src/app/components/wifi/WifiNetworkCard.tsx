@@ -13,16 +13,12 @@ import {
 import { Button } from "@/app/components/ui/button";
 import {
   Wifi,
-  Key,
-  Eye,
-  EyeOff,
   MapPin,
   Gauge,
   HardDrive,
-  Loader2,
+  Clock,
 } from "lucide-react";
 import type { WifiNetwork } from "@/types";
-import CryptoJS from "crypto-js";
 import Image from "next/image";
 
 interface WifiNetworkCardProps {
@@ -31,7 +27,7 @@ interface WifiNetworkCardProps {
   contract: ethers.Contract | null;
   setOpenConManagerModal: (value: boolean) => void;
   setIsSetNetwork: (network: WifiNetwork) => void;
- }
+}
 
 const getGradientClass = (id: string) => {
   let hash = 0;
@@ -58,16 +54,14 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
   address,
   contract,
   setOpenConManagerModal,
-  setIsSetNetwork
+  setIsSetNetwork,
 }) => {
-  const [showPassword, setShowPassword] = useState(false);
   const [hasPaid, setHasPaid] = useState(false);
-  const [decryptedPassword, setDecryptedPassword] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
-  const [isDecrypting, setIsDecrypting] = useState(false);
+
 
   useEffect(() => {
     const fetchImage = async () => {
@@ -100,50 +94,18 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
         URL.revokeObjectURL(imageUrl);
       }
     };
-  }, [network.imageCID]);
+  }, [network.imageCID, imageUrl]);
 
-  const decryptPassword = React.useCallback(async () => {
-    if (!hasPaid) return null;
-
-    setIsDecrypting(true);
-    try {
-      const passwordCID = await contract?.getPasswordCID(network.id);
-      if (!passwordCID) throw new Error("Empty CID");
-
-      const response = await fetch(`https://ipfs.io/ipfs/${passwordCID}`);
-      if (!response.ok) throw new Error("Failed to fetch password from IPFS");
-      const encryptedPassword = await response.text();
-
-      const secretKey = process.env.NEXT_PUBLIC_CRYPTOJS_SECRET_KEY!;
-      if (!secretKey) throw new Error("Decryption key not set in environment");
-
-      const decryptedBytes = CryptoJS.AES.decrypt(encryptedPassword, secretKey);
-      const password = decryptedBytes.toString(CryptoJS.enc.Utf8);
-      if (!password) throw new Error("Failed to decrypt password");
-      return password;
-    } catch (err) {
-      console.error("Decryption failed:", err);
-      return null;
-    } finally {
-      setIsDecrypting(false);
-    }
-  }, [contract, hasPaid, network.id]);
 
   useEffect(() => {
     if (!contract || !address) return;
 
-    const handlePaymentSuccess = async (payer: string, networkId: string) => {
+    const handlePaymentSuccess = async (_networkId: string, payer: string) => {
       if (
-        payer.toLowerCase() === address.toLowerCase() &&
-        networkId === network.id
+        _networkId == network.id &&
+        payer.toLowerCase() === address.toLowerCase()
       ) {
         setHasPaid(true);
-        try {
-          const password = await decryptPassword();
-          setDecryptedPassword(password);
-        } catch (err) {
-          console.error("Failed to decrypt after payment:", err);
-        }
       }
     };
 
@@ -152,34 +114,21 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
     return () => {
       contract.off("PaymentReceived", handlePaymentSuccess);
     };
-  }, [contract, address, network.id, decryptPassword]);
+  }, [contract, address, network.id]);
+
 
   useEffect(() => {
-    const checkPayment = async () => {
+    const checkSession = async () => {
       if (!contract || !address) return;
       try {
-        const paid = await contract.hasPaid(network.id, address);
-        setHasPaid(paid);
+        const { data } = await api.get(`/get-session/${network.id}/${address}`);
+        setHasPaid(data.active);
       } catch (err) {
-        console.error("Error checking payment:", err);
+        console.error('Error checking session:', err);
       }
     };
-    checkPayment();
+    checkSession();
   }, [address, contract, network.id]);
-
-  useEffect(() => {
-    const fetchDecryptedPassword = async () => {
-      if (!hasPaid) return;
-      try {
-        const password = await decryptPassword();
-        setDecryptedPassword(password ?? null);
-      } catch (err) {
-        console.error("Failed to decrypt password:", err);
-      }
-    };
-    fetchDecryptedPassword();
-  }, [hasPaid, decryptPassword]);
-
 
   return (
     <Card
@@ -193,7 +142,7 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
         {imageLoading ? (
           <div
             className={`animate-pulse bg-gradient-to-r ${getGradientClass(
-              network.id
+              network.id.toString()
             )} w-full h-full`}
           />
         ) : imageUrl && !imageError ? (
@@ -211,7 +160,7 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
         ) : (
           <div
             className={`h-full w-full flex items-center justify-center ${getGradientClass(
-              network.id
+              network.id.toString()
             )}`}
           >
             <div className="text-white text-4xl font-bold opacity-80">
@@ -223,7 +172,7 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
 
       <CardHeader className="flex flex-row items-start gap-4 pb-2">
         <div className="bg-purple-100 dark:bg-purple-900/50 rounded-full p-3">
-          <Wifi className="text-purple-600 dark:text-purple-400" size={20} />
+          <Wifi className="text-purple-600 dark:text-zaanet-purple-light" size={20} />
         </div>
         <div>
           <CardTitle className="text-xl font-bold text-gray-900">
@@ -249,7 +198,7 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-900">Speed</p>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-900">
-                {network.speed} Mbps
+                {network.wifispeed} Mbps
               </p>
             </div>
           </div>
@@ -266,48 +215,12 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
 
         {hasPaid && (
           <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-center">
               <div className="flex items-center gap-2">
-                <Key className="text-purple-500" size={16} />
-                <span className="text-sm font-medium">Network Password</span>
+                <Clock className="text-purple-500" size={16} />
+                <span className="text-sm font-medium">Remaining Time</span>
               </div>
-
-              {isDecrypting ? (
-                <div className="flex items-center gap-1 text-sm text-gray-500">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Decrypting...</span>
-                </div>
-              ) : decryptedPassword ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="text-purple-600 dark:text-purple-400 p-0 h-auto gap-1"
-                >
-                  {showPassword ? (
-                    <>
-                      <EyeOff size={14} />
-                      <span>Hide</span>
-                    </>
-                  ) : (
-                    <>
-                      <Eye size={14} />
-                      <span>Show</span>
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <span className="text-sm text-gray-500">
-                  Error loading password
-                </span>
-              )}
             </div>
-
-            {showPassword && decryptedPassword && (
-              <div className="mt-2 p-2 bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600">
-                <p className="font-mono text-sm">{decryptedPassword}</p>
-              </div>
-            )}
           </div>
         )}
       </CardContent>
@@ -315,11 +228,11 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
       <CardFooter className="flex flex-col gap-3 pt-0">
         <div className="w-full flex justify-between items-center">
           <span className="text-xs text-gray-500 dark:text-gray-900">
-            Coordinates: {network.location.lat.toFixed(4)},{" "}
-            {network.location.lng.toFixed(4)}
+            Coordinates: {Number(network.location.lat).toFixed(4)},{" "}
+            {Number(network.location.lng).toFixed(4)}
           </span>
           <span className="text-lg font-bold text-purple-600 dark:text-purple-400">
-            {ethers.parseUnits(network.price)} USDT
+            {network.price} USDT
           </span>
         </div>
 
@@ -331,7 +244,7 @@ const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
               : "bg-purple-600 hover:bg-purple-700 text-white"
           }`}
           onClick={() => {
-            setIsSetNetwork(network)
+            setIsSetNetwork(network);
             setOpenConManagerModal(true);
           }}
           disabled={hasPaid}

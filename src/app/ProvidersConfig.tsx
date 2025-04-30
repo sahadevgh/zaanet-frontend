@@ -29,6 +29,7 @@ function ProvidersConfig({ children, cookie }: ProvidersConfigProps) {
           <Toaster />
           <Sonner />
           <RainbowKitProvider
+          modalSize="compact"
             theme={darkTheme({
               accentColor: "#0E76FD",
               accentColorForeground: "white",

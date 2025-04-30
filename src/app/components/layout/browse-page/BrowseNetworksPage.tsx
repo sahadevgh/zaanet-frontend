@@ -15,17 +15,16 @@ import {
 } from "@/app/components/web3/contants";
 import { ethers } from "ethers";
 import { Skeleton } from "@/app/components/ui/skeleton";
-import { useAccount, useWalletClient } from "wagmi";
+import { useAccount } from "wagmi";
 import { toast } from "@/hooks/use-toast";
-import CryptoJS from "crypto-js";
 import ConnectManager from "../../wifi/ConnectManager";
 
-
- // HANDLE CONNECTION
- interface HandleConnectParams {
+// HANDLE CONNECTION
+interface HandleConnectParams {
   network: WifiNetwork;
   totalPrice: ethers.BigNumberish;
-  onComplete: (success: boolean) => void;
+  duration: string;
+  onComplete: (result: { success: boolean; token?: string | undefined }) => void;
 }
 
 export const NetworkCardSkeleton = () => {
@@ -50,10 +49,8 @@ export default function BrowseNetworksPage() {
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [isLoading, setIsLoading] = useState(false);
   const { address, isConnected } = useAccount();
-  const { data: walletClient } = useWalletClient();
-  const [openConManagerModal, setOpenConManagerModal] = useState(false)
-const [isSetNetwork, setIsSetNetwork] = useState<WifiNetwork | null>(null);
-console.log(isSetNetwork)
+  const [openConManagerModal, setOpenConManagerModal] = useState(false);
+  const [isSetNetwork, setIsSetNetwork] = useState<WifiNetwork | null>(null);
 
   async function getAllHostedNetworksByIds(id: number) {
     const contractInstance = await loadContract({
@@ -124,138 +121,74 @@ console.log(isSetNetwork)
   }, []);
 
 
-  async function handleConnect({
-    network,
-    totalPrice,
-    onComplete,
-  }: HandleConnectParams): Promise<void> {
+  // Handle Connect
+  async function handleConnect({ network, totalPrice, duration, onComplete }: HandleConnectParams): Promise<void> {
     if (!isConnected || !address) {
-      toast({
-        title: "Error",
-        description: "Please connect your wallet first.",
-        variant: "destructive",
-      });
-      onComplete(false);
+      toast({ title: 'Error', description: 'Please connect your wallet first.', variant: 'destructive' });
+      onComplete({ success: false });
       return;
     }
   
-    const contractInstance = await loadContract({
-      contractAddress,
-      contractABI: contract_Abi,
-      withSigner: true,
-    });
-  
-    if (!contractInstance || !walletClient) {
-      toast({
-        title: "Error",
-        description: "Contract or wallet not loaded.",
-        variant: "destructive",
-      });
-      onComplete(false);
-      return;
-    }
+    const contractInstance = await loadContract({contractAddress, contractABI: contract_Abi, withSigner: true});
   
     try {
-      const networkData: {
-        id: number;
-        isActive: boolean;
-      } = await contractInstance.getHostedNetworkById(network.id);
+      // const isPaused = await contractInstance?.paused();
+      // if (isPaused) throw new Error('Contract is paused');
   
-      if (!networkData.isActive) throw new Error("Network is not active");
-      if (Number(networkData.id) === 0) throw new Error("Network does not exist");
+      const networkData = await contractInstance?.getHostedNetworkById(network.id);
+      if (!networkData.isActive) throw new Error('Network is not active');
+      if (Number(networkData.id) === 0) throw new Error('Network does not exist');
   
-      let passwordCID: string;
-      const hasPaid: boolean = await contractInstance.hasPaid(network.id, address);
-      if (hasPaid) {
-        passwordCID = await contractInstance.getPasswordCID(network.id);
-      } else {
-        const usdtContract = await loadContract({
-          contractAddress: usdtContractAddress,
-          contractABI: usdtAbi,
-          withSigner: true,
-        });
+      const durationNum = parseInt(duration, 10);
+      if (isNaN(durationNum) || durationNum <= 0) throw new Error('Invalid duration');
   
-        // 1. Approve Zaanet contract to spend USDT
-        const approveTx = await usdtContract?.approve(
-          contractInstance.target,
-          totalPrice
-        );
-  
-        toast({
-          title: "Approval Sent",
-          description: `Approving ZaaNet to spend your USDT...`,
-        });
-  
-        await approveTx.wait();
-  
-        // 2. Call acceptPayment (ERC20, no value)
-        const tx = await contractInstance.acceptPayment(network.id, totalPrice, {
-          gasLimit: 200_000,
-        });
-  
-        toast({
-          title: "Payment Sent",
-          description: `Processing payment for ${network.name}...`,
-        });
-  
-        await tx.wait();
-  
-        passwordCID = await contractInstance.getPasswordCID(network.id);
+      const amountToSend = ethers.parseUnits(totalPrice.toString(), 18);
+      const expectedPrice = networkData.price * BigInt(durationNum);
+      if (expectedPrice !== amountToSend) {
+        throw new Error(`Price mismatch: expected ${ethers.formatUnits(expectedPrice, 18)} USDT`);
       }
   
-      if (!passwordCID.match(/^(Qm[1-9A-Za-z]{44}|bafy[0-9a-z]{50})$/)) {
-        throw new Error("Invalid IPFS CID");
+      const usdtContract = await loadContract({contractAddress: usdtContractAddress, contractABI: usdtAbi, withSigner: true});
+      const balance = await usdtContract?.balanceOf(address);
+      if (balance < amountToSend) {
+        throw new Error(`Insufficient USDT balance: need ${ethers.formatUnits(amountToSend, 18)} USDT`);
       }
   
-      const response = await fetch(`https://ipfs.io/ipfs/${passwordCID}`);
-      if (!response.ok) throw new Error("Failed to fetch password from IPFS");
-      const encryptedPassword: string = await response.text();
+      const approveTx = await usdtContract?.approve(contractAddress, amountToSend);
+      toast({ title: 'Approval Sent', description: 'Approving ZaaNet to spend your USDT...' });
+      await approveTx.wait();
   
-      const secretKey = process.env.NEXT_PUBLIC_CRYPTOJS_SECRET_KEY!;
-      if (!secretKey) throw new Error("Decryption key not set in environment");
-  
-      const decryptedBytes = CryptoJS.AES.decrypt(encryptedPassword, secretKey);
-      const password = decryptedBytes.toString(CryptoJS.enc.Utf8);
-      if (!password) throw new Error("Failed to decrypt password");
-  
-      setAvailableNetworks((prev) =>
-        prev.map((n) => (n.id === network.id ? { ...n, password } : n))
+      const estimatedGas = await contractInstance?.acceptPayment.estimateGas(
+        network.id,
+        amountToSend,
+        BigInt(durationNum)
+      );
+      const tx = await contractInstance?.acceptPayment(
+        network.id,
+        amountToSend,
+        BigInt(durationNum),
+        { gasLimit: ((estimatedGas ?? BigInt(0)) * BigInt(120)) / BigInt(100) }
       );
   
-      setTimeout(() => fetchHostedNetworks(), 3000);
+      toast({ title: 'Payment Sent', description: `Processing payment for ${network.name}...` });
+      const receipt = await tx.wait();
   
-      toast({
-        title: "Success",
-        description: `Connected to ${network.name}. Password: ${password}`,
-      });
-      onComplete(true);
+      // Fetch token from backend
+      const sessionId = receipt.logs
+        .filter((log: { address: string }) => log.address === contractAddress)
+        .map((log: ethers.Log) => contractInstance?.interface.parseLog(log))
+        .find((log: { name: string; args: { sessionId: string } }) => log?.name === 'SessionStarted')?.args.sessionId;
+  
+      const response = await axios.get<{ token: string }>(`api/get-token/${sessionId}`);
+      const token = response.data.token;
+  
+      toast({ title: 'Success', description: `Connected to ${network.name}. Use token to authenticate.` });
+      onComplete({ success: true, token });
     } catch (error: unknown) {
-      console.error("Connection error:", error);
-      let errorMessage =
-        "Failed to connect to network. Check your USDT balance or approval.";
-  
-      if (error instanceof Error) {
-        const message = error.message;
-        if (message.includes("Network does not exist"))
-          errorMessage = "This network is no longer available.";
-        else if (message.includes("Network is not active"))
-          errorMessage = "This network is currently inactive.";
-        else if (message.includes("Invalid IPFS CID"))
-          errorMessage = "Invalid IPFS CID returned by contract.";
-        else if (message.includes("fetch"))
-          errorMessage = "Unable to retrieve password from IPFS.";
-        else if (message.includes("decrypt"))
-          errorMessage = "Failed to decrypt password. Check encryption key.";
-        else if (message.includes("Decryption key"))
-          errorMessage = "Decryption key is missing in environment.";
-      }
-  
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      onComplete(false);
+      console.error('Connection error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to connect.';
+      toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
+      onComplete({ success: false });
     }
   }
 
@@ -363,7 +296,7 @@ console.log(isSetNetwork)
                 contract={contract}
                 setIsSetNetwork={setIsSetNetwork}
                 setOpenConManagerModal={setOpenConManagerModal}
-                />
+              />
             ))
           ) : (
             <p className="text-gray-900 col-span-full text-center">
@@ -373,13 +306,18 @@ console.log(isSetNetwork)
         </div>
       )}
 
-{openConManagerModal && isSetNetwork && (
+      {openConManagerModal && isSetNetwork && (
         <>
-          <ConnectManager 
+          <ConnectManager
             isSetNetwork={isSetNetwork}
             setOpenConManagerModal={setOpenConManagerModal}
-            onConnect={(network, totalPrice, onComplete) =>
-              handleConnect({ network, totalPrice, onComplete })
+            onConnect={(network, totalPrice, duration, onComplete) =>
+              handleConnect({ 
+                network, 
+                totalPrice, 
+                duration, 
+                onComplete: (result) => onComplete(result) 
+              })
             }
           />
         </>
