@@ -6,18 +6,19 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
-import QRCode from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 type ConnectManagerProps = {
   isSetNetwork: WifiNetwork;
   setOpenConManagerModal: (value: boolean) => void;
-  onConnect?: (
+  onConnect: (
     network: WifiNetwork,
     totalPrice: string,
     duration: string,
-    onComplete: (success: boolean, token?: string) => void
+    onComplete: (result: { success: boolean; token?: string }) => void
   ) => void;
 };
+
 
 function ConnectManager({ isSetNetwork, setOpenConManagerModal, onConnect }: ConnectManagerProps) {
   const [duration, setDuration] = useState('1');
@@ -46,12 +47,13 @@ function ConnectManager({ isSetNetwork, setOpenConManagerModal, onConnect }: Con
   const handleConnectClick = async () => {
     if (onConnect) {
       setIsProcessing(true);
-      onConnect(isSetNetwork, calculatedPrice, duration, async (success, token) => {
+      onConnect(isSetNetwork, calculatedPrice, duration, (result) => {
         setIsProcessing(false);
-        if (success && token) {
-          setToken(token);
+        if (result.success && result.token) {
+          setToken(result.token);
         }
       });
+      
     }
   };
 
@@ -131,10 +133,10 @@ function ConnectManager({ isSetNetwork, setOpenConManagerModal, onConnect }: Con
             <div className="space-y-4">
               <h3 className="text-lg font-medium text-gray-700">Access Token</h3>
               <p className="text-sm text-gray-600">
-                Connect to "{name}" WiFi and scan this QR code or enter the token to authenticate.
+                Connect to &quot;{name}&quot; WiFi and scan this QR code or enter the token to authenticate.
               </p>
               <div className="flex justify-center">
-                <QRCode value={token} size={128} />
+                <QRCodeCanvas value={token} size={128} />
               </div>
               <p className="text-sm font-mono text-center break-all">{token}</p>
               <p className="text-xs text-gray-500 text-center">
