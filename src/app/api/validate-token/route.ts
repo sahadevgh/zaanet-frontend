@@ -1,4 +1,4 @@
-import { connectToDatabase } from '@/app/server/db/mongodb';
+import { connectToDatabase } from '@/app/server/db/mongoDB';
 import SessionModel from '@/app/server/models/Session.model';
 import jwt from 'jsonwebtoken';
 import { NextResponse } from 'next/server';

@@ -1,4 +1,4 @@
-import { connectToDatabase } from '@/app/server/db/mongodb';
+import { connectToDatabase } from '../../.../../../server/db/mongoDB';
 import sessionModel from '@/app/server/models/Session.model';
 import { NextResponse } from 'next/server';
 

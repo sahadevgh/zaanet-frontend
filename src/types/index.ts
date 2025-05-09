@@ -3,23 +3,14 @@
 
 export type WifiNetwork = {
   id: string;
-  name: string;
-  description: string;
-  location: {
-    city: string;
-    area: string;
-    lat: number;
-    lng: number;
-  };
-  speed: number;
+  metaDataCID: string;
   price: string;
   hostWallet: string;
-  password: string;
-  imageCID: string;
   hasPaid?: boolean;
-  type: string;
-  wifispeed?: number;
+  createdAt: Date;
+  updatedAt: Date;
 };
+
 
 export interface Session {
   id: string;
@@ -39,7 +30,6 @@ export interface User {
 
 export interface HostForm {
   ssid: string;
-  password: string;
   location: {
     country: string;
     city: string;

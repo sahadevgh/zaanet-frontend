@@ -6,25 +6,24 @@ import type { WifiNetwork } from "@/types";
 import WifiNetworkCard from "@/app/components/wifi/WifiNetworkCard";
 import { Button } from "@/app/components/ui/button";
 import { MapPin, SortAsc, SortDesc, List, Map, Loader2 } from "lucide-react";
-import {
-  contract_Abi,
-  contractAddress,
-  loadContract,
-  usdtAbi,
-  usdtContractAddress,
-} from "@/app/components/web3/contants";
 import { ethers } from "ethers";
 import { Skeleton } from "@/app/components/ui/skeleton";
-import { useAccount } from "wagmi";
 import { toast } from "@/hooks/use-toast";
 import ConnectManager from "../../wifi/ConnectManager";
+import { loadContract } from "../../web3/contants/web3Funcs";
+import { contract_Abi, contractAddress, usdtAbi, usdtContractAddress } from "../../web3/contants/projectData";
+import { initSmartAccountClient } from "../../web3/accountAbstraction";
+import { useSmartAccount } from "../../web3/SmartAccountProvider";
 
 // HANDLE CONNECTION
 interface HandleConnectParams {
   network: WifiNetwork;
   totalPrice: ethers.BigNumberish;
   duration: string;
-  onComplete: (result: { success: boolean; token?: string | undefined }) => void;
+  onComplete: (result: {
+    success: boolean;
+    token?: string | undefined;
+  }) => void;
 }
 
 export const NetworkCardSkeleton = () => {
@@ -42,24 +41,16 @@ export const NetworkCardSkeleton = () => {
 };
 
 export default function BrowseNetworksPage() {
+    const { address, connect, disconnect } = useSmartAccount();
   const [contract, setContract] = useState<ethers.Contract | null>(null);
   const [availableNetworks, setAvailableNetworks] = useState<WifiNetwork[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortByArea, setSortByArea] = useState<"asc" | "desc" | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [isLoading, setIsLoading] = useState(false);
-  const { address, isConnected } = useAccount();
   const [openConManagerModal, setOpenConManagerModal] = useState(false);
   const [isSetNetwork, setIsSetNetwork] = useState<WifiNetwork | null>(null);
 
-  async function getAllHostedNetworksByIds(id: number) {
-    const contractInstance = await loadContract({
-      contractAddress,
-      contractABI: contract_Abi,
-    });
-    if (!contractInstance) throw new Error("Failed to load contract");
-    return contractInstance.getHostedNetworkById(id);
-  }
 
   const fetchHostedNetworks = async () => {
     setIsLoading(true);
@@ -68,21 +59,21 @@ export default function BrowseNetworksPage() {
         contractAddress,
         contractABI: contract_Abi,
       });
+
       if (!contractInstance) {
         console.error("Contract not loaded");
         return;
       }
+
       setContract(contractInstance);
 
       const networkIdCounter = Number(
         await contractInstance.networkIdCounter()
       );
-      const networkPromises: Promise<
-        ReturnType<typeof getAllHostedNetworksByIds>
-      >[] = [];
 
+      const networkPromises = [];
       for (let i = 1; i <= networkIdCounter; i++) {
-        networkPromises.push(getAllHostedNetworksByIds(i));
+        networkPromises.push(contractInstance.getHostedNetworkById(i));
       }
 
       const networksRaw = await Promise.all(networkPromises);
@@ -91,20 +82,11 @@ export default function BrowseNetworksPage() {
         .filter((network) => network.id !== 0 && network.isActive)
         .map((network) => ({
           id: network.id.toString(),
-          name: network.name,
-          description: network.description || "No description available",
-          imageCID: network.imageCID || "",
-          type: network.type || "Unknown",
-          location: {
-            city: network.location.city,
-            area: network.location.area,
-            lat: parseFloat(network.location.latitude) || 0,
-            lng: parseFloat(network.location.longitude) || 0,
-          },
-          speed: parseInt(network.wifispeed) || 0,
+          metaDataCID: network.metaDataCID,
           price: ethers.formatUnits(network.price, 18),
           hostWallet: network.hostAddress,
-          password: "",
+          createdAt: new Date(Number(network.createdAt) * 1000), // ← actual Date
+          updatedAt: new Date(Number(network.updatedAt) * 1000), // ← actual Date
         }));
 
       setAvailableNetworks(networks);
@@ -126,30 +108,20 @@ export default function BrowseNetworksPage() {
     totalPrice,
     duration,
     onComplete,
-  }: HandleConnectParams): Promise<void> {  
-    if (!isConnected || !address) {
-      toast({
-        title: 'Error',
-        description: 'Please connect your wallet first.',
-        variant: 'destructive',
-      });
-      onComplete({ success: false });
-      return;
-    }
-  
+  }: HandleConnectParams): Promise<void> {
     try {
       const contractInstance = await loadContract({
         contractAddress,
         contractABI: contract_Abi,
-        withSigner: true,
       });
   
       const networkData = await contractInstance?.getHostedNetworkById(network.id);
-      if (!networkData.isActive) throw new Error('Network is not active');
-      if (Number(networkData.id) === 0) throw new Error('Network does not exist');
+      if (!networkData.isActive) throw new Error("Network is not active");
+      if (Number(networkData.id) === 0) throw new Error("Network does not exist");
   
       const durationNum = parseInt(duration, 10);
-      if (isNaN(durationNum) || durationNum <= 0) throw new Error('Invalid duration');
+      if (isNaN(durationNum) || durationNum <= 0)
+        throw new Error("Invalid duration");
   
       const amountToSend = ethers.parseUnits(totalPrice.toString(), 18);
       const expectedPrice = networkData.price * BigInt(durationNum);
@@ -159,105 +131,89 @@ export default function BrowseNetworksPage() {
         );
       }
   
-      const usdtContract = await loadContract({
-        contractAddress: usdtContractAddress,
-        contractABI: usdtAbi,
-        withSigner: true,
-      });
-      const balance = await usdtContract?.balanceOf(address);
-      if (balance < amountToSend) {
-        throw new Error(
-          `Insufficient USDT balance: need ${ethers.formatUnits(amountToSend, 18)} USDT`
-        );
-      }
+      // Encode approve call
+      const usdtInterface = new ethers.Interface(usdtAbi);
+      const approveCallData = usdtInterface.encodeFunctionData('approve', [contractAddress, amountToSend]);
   
-      const approveTx = await usdtContract?.approve(contractAddress, amountToSend);
-      toast({
-        title: 'Approval Sent',
-        description: 'Approving ZaaNet to spend your USDT...',
-      });
-      await approveTx.wait();
-  
-      const estimatedGas = await contractInstance?.acceptPayment.estimateGas(
+      // Encode acceptPayment call
+      const acceptPaymentCallData = contractInstance?.interface.encodeFunctionData('acceptPayment', [
         network.id,
         amountToSend,
         BigInt(durationNum)
-      );
-      const tx = await contractInstance?.acceptPayment(
-        network.id,
-        amountToSend,
-        BigInt(durationNum),
-        { gasLimit: estimatedGas ? (estimatedGas * BigInt(120)) / BigInt(100) : BigInt(0) }
-      );
+      ]);
   
-      toast({
-        title: 'Payment Sent',
-        description: `Processing payment for ${network.name}...`,
+      // Initialize AA client dynamically
+      const kernelClient = await initSmartAccountClient();
+  
+      // Send both calls in a single user operation using KernelClient
+      const userOpHash = await kernelClient.sendUserOperation({
+        callData: await kernelClient.account.encodeCalls([
+          {
+            to: usdtContractAddress,
+            value: 0n,
+            data: approveCallData as `0x${string}`,
+          },
+          {
+            to: contractAddress,
+            value: 0n,
+            data: acceptPaymentCallData as `0x${string}`,
+          },
+        ]),
       });
-      const receipt = await tx.wait();
   
-      const sessionId = receipt.logs
-        .filter((log: { address: string }) => log.address === contractAddress)
-        .map((log: ethers.Log) => contractInstance?.interface.parseLog(log))
-        .find(
-          (log: { name: string; args: { sessionId: string } }) =>
-            log?.name === 'SessionStarted'
-        )?.args.sessionId;
+      toast({ title: 'Transaction Sent', description: 'Processing payment via smart account...' });
+     const tx =  await kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
   
-      if (!sessionId) throw new Error('Session ID not found in logs');
+      // Trigger backend sync if transaction is successful
+      if (tx) {
+        toast({ title: 'Payment Successful', description: 'Syncing with backend...' });
+        await axios.get('/api/sync-events');
+      } else {
+        throw new Error("Transaction failed");
+      }
   
-      // Trigger backend sync
-      await axios.get('/api/sync-events');
-  
-      // Retry logic for fetching token (using for looop for any possible lag)
+      // Attempt to fetch session token
       let token: string | null = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          const response = await axios.get<{ token: string }>(
-            `/api/get-token/${sessionId}`
-          );
-          token = response.data.token;
+          const res = await axios.get<{ token: string }>(`/api/get-token-by-network/${network.id}`);
+          token = res.data.token;
           break;
         } catch {
-          await new Promise((res) => setTimeout(res, 1000)); // Wait 1 second before retrying
+          await new Promise((res) => setTimeout(res, 1000));
         }
       }
   
-      if (!token) {
-        throw new Error('Failed to fetch session token.');
-      }
+      if (!token) throw new Error("Failed to retrieve session token");
   
-      toast({
-        title: 'Success',
-        description: `Paid for ${network.name}. Use token to authenticate.`,
-      });
+      toast({ title: 'Success', description: `Connected to ${network.id}` });
       onComplete({ success: true, token });
-    } catch (error: unknown) {
-      console.error('Connection error:', error);
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to connect.';
+    } catch (error: any) {
+      console.error("Connection Error:", error);
       toast({
-        title: 'Error',
-        description: errorMessage,
+        title: 'Connection Failed',
+        description: error.message || 'An error occurred during connection.',
         variant: 'destructive',
       });
       onComplete({ success: false });
     }
   }
 
-  let filteredNetworks = availableNetworks.filter((network) =>
-    `${network.location.city} ${network.location.area}`
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-  );
 
-  if (sortByArea) {
-    filteredNetworks = [...filteredNetworks].sort((a, b) =>
-      sortByArea === "asc"
-        ? a.location.area.localeCompare(b.location.area)
-        : b.location.area.localeCompare(a.location.area)
-    );
-  }
+  // let filteredNetworks = availableNetworks.filter((network) =>
+  //   `${network.metaDataCID}`
+  //     .toLowerCase()
+  //     .includes(searchTerm.toLowerCase())
+  // );
+  
+  // if (sortByArea) {
+  //   filteredNetworks = [...filteredNetworks].sort((a, b) =>
+  //     sortByArea === "asc"
+  //       ? a.location.area.localeCompare(b.location.area)
+  //       : b.location.area.localeCompare(a.location.area)
+  //   );
+  // }
+  
 
   return (
     <div className="container min-h-screen max-w-6xl mx-auto py-12 px-4 sm:px-6">
@@ -271,7 +227,7 @@ export default function BrowseNetworksPage() {
           Learn more about ZaaNet
         </Link>
       </p>
-  
+
       <div className="mb-8 flex flex-col sm:flex-row gap-4 items-center">
         <div className="flex items-center gap-2 w-full max-w-md">
           <MapPin className="text-zaanet-purple" size={20} />
@@ -319,7 +275,7 @@ export default function BrowseNetworksPage() {
           </Button>
         </div>
       </div>
-  
+
       {isLoading ? (
         viewMode === "map" ? (
           <div className="flex items-center justify-center h-96 w-full rounded-lg border border-gray-300 mb-8">
@@ -340,7 +296,7 @@ export default function BrowseNetworksPage() {
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredNetworks.length > 0 ? (
+          {/* {filteredNetworks.length > 0 ? (
             filteredNetworks.map((network) => (
               <WifiNetworkCard
                 key={network.id}
@@ -355,26 +311,24 @@ export default function BrowseNetworksPage() {
             <p className="text-gray-900 col-span-full text-center">
               No networks found matching your search.
             </p>
-          )}
+          )} */}
         </div>
       )}
-  
-      {openConManagerModal && isSetNetwork && (
-       <ConnectManager
-       isSetNetwork={isSetNetwork}
-       setOpenConManagerModal={setOpenConManagerModal}
-       onConnect={(network, totalPrice, duration, onComplete) => {
-         handleConnect({
-           network,
-           totalPrice: parseFloat(totalPrice),
-           duration,
-           onComplete,
-         });
-       }}
-     />
 
-     
+      {openConManagerModal && isSetNetwork && (
+        <ConnectManager
+          isSetNetwork={isSetNetwork}
+          setOpenConManagerModal={setOpenConManagerModal}
+          onConnect={(network, totalPrice, duration, onComplete) => {
+            handleConnect({
+              network,
+              totalPrice: parseFloat(totalPrice),
+              duration,
+              onComplete,
+            });
+          }}
+        />
       )}
     </div>
-  );  
+  );
 }

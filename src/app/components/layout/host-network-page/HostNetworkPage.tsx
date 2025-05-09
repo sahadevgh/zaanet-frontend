@@ -5,20 +5,19 @@ import { ethers } from "ethers";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Wifi, MapPin, DollarSign, Key, Info, Upload, Check, Loader2 } from "lucide-react";
+import { Wifi, MapPin, DollarSign, Info, Upload, Check, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import CryptoJS from "crypto-js";
 import type { HostForm } from "@/types";
-import { contract_Abi, contractAddress, loadContract, uploadImageToIPFS, uploadToIPFS } from "../../web3/contants";
+import { loadContract, uploadImageToIPFS, uploadToIPFS } from "../../web3/contants/web3Funcs";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "../../ui/form";
 import { Input } from "../../ui/input";
 import { Textarea } from "../../ui/textarea";
 import { Button } from "../../ui/button";
+import { contract_Abi, contractAddress } from "../../web3/contants/projectData";
 
 // Zod schema
 const hostSchema = z.object({
   ssid: z.string().min(3, "Network name is required"),
-  password: z.string().min(3, "Password is required"),
   location: z.object({
     country: z.string().min(1, "Country is required"),
     city: z.string().min(1, "City is required"),
@@ -43,7 +42,6 @@ export default function HostNetworkPage() {
     mode: "onTouched",
     defaultValues: {
       ssid: "",
-      password: "",
       location: { country: "", city: "", area: "", lat: 5.6037, lng: -0.187 },
       speed: 25,
       price: 1,
@@ -53,8 +51,9 @@ export default function HostNetworkPage() {
   });
 
   useEffect(() => {
-    setIsClient(true); // Ensure client-side rendering
+    setIsClient(true); 
   }, []);
+
 
   useEffect(() => {
     async function initializeContract() {
@@ -91,11 +90,14 @@ export default function HostNetworkPage() {
         return;
       }
 
+      // Validate image upload
       let imageCID = "";
       if (data.image) {
         imageCID = await uploadImageToIPFS(data.image);
       }
 
+      // Validate location
+      // Check if all location fields are filled
       if (
         !data.location.city ||
         !data.location.country ||
@@ -111,39 +113,34 @@ export default function HostNetworkPage() {
         onComplete(false);
         return;
       }
-
-      const secretKey = process.env.NEXT_PUBLIC_CRYPTOJS_SECRET_KEY!;
-      if (!secretKey) {
-        throw new Error("Encryption key not set in environment");
-      }
-
-      const encryptedPassword = CryptoJS.AES.encrypt(data.password, secretKey).toString();
-      const decryptedBytes = CryptoJS.AES.decrypt(encryptedPassword, secretKey);
-      const decryptedPassword = decryptedBytes.toString(CryptoJS.enc.Utf8);
-      if (decryptedPassword !== data.password) {
-        throw new Error("Encryption verification failed");
-      }
-
-      const passwordCID = await uploadToIPFS(encryptedPassword);
-      if (!passwordCID.match(/^(Qm[1-9A-Za-z]{44}|bafy[0-9a-z]{50})$/)) {
-        throw new Error("Invalid IPFS CID for password");
-      }
-
+      
       const priceString = Number(data.price).toFixed(18); // convert float safely
       const amountToSend = ethers.parseUnits(priceString, 18);
       
-      const tx = await contract.hostANetwork(
-        data.ssid,
-        passwordCID,
-        data.location.city,
-        data.location.country,
-        data.location.area,
-        data.location.lat.toString(),
-        data.location.lng.toString(),
-        data.speed.toString(),
+      // Create metadata
+      const metadata = {
+        ssid: data.ssid,
+        location: {
+          country: data.location.country,
+          city: data.location.city,
+          area: data.location.area,
+          lat: data.location.lat,
+          lng: data.location.lng
+        },
+        speed: data.speed,
+        description: data.description || "",
+        image: imageCID,
+        createdAt: new Date().toISOString() // Store creation date
+      };
+      
+      // Upload metadata to IPFS
+      const metadataCID = await uploadToIPFS(JSON.stringify(metadata));
+      
+      // Send transaction to register network
+      const tx = await contract.registerNetwork(
         amountToSend,
-        data.description || "",
-        imageCID || ""
+        metadataCID,
+        true // isActive
       );
 
       await tx.wait();
@@ -211,15 +208,6 @@ export default function HostNetworkPage() {
           <div className="flex items-center gap-2">
             <Wifi className="text-zaanet-purple" size={18} />
             <span>{data.speed} Mbps</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Key className="text-zaanet-purple" size={18} />
-            <span>
-              {data.password
-                .split("")
-                .map(() => "•")
-                .join("")}
-            </span>
           </div>
         </div>
         {data.description && (
@@ -304,32 +292,7 @@ export default function HostNetworkPage() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      <Key className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
-                      WiFi Password
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Enter WiFi password"
-                        autoComplete="off"
-                        required
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Required for secure user access. Your password is encrypted
-                      before being stored.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        
               <div className="space-y-2">
                 <label className="text-sm font-medium">
                   <MapPin className="inline -mt-1 mr-1 text-zaanet-purple" /> Location

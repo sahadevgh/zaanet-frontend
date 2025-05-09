@@ -1,4 +1,4 @@
-import { connectToDatabase } from '@/app/server/db/mongodb';
+import { connectToDatabase } from '@/app/server/db/mongoDB';
 import MetadataModel from '@/app/server/models/Metadata.model';
 import sessionModel from '@/app/server/models/Session.model';
 import { ethers } from 'ethers';

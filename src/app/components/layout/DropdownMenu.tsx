@@ -3,22 +3,20 @@
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '../ui/button'
-import { User, LayoutDashboard, Network, UserPlus } from 'lucide-react'
+import { LayoutDashboard, LogOut, UserPlus } from 'lucide-react'
 
 type DropdownMenuProps = {
   dropdownOpen: boolean
   setDropdownOpen: (value: boolean) => void
-  openAccountModal?: () => void
-  openChainModal?: () => void
   userType: string
+  onDisconnect: () => void
 }
 
 export default function DropdownMenu({
   dropdownOpen,
   setDropdownOpen,
-  openAccountModal,
-  openChainModal,
   userType,
+  onDisconnect,
 }: DropdownMenuProps) {
   const router = useRouter()
 
@@ -27,11 +25,6 @@ export default function DropdownMenu({
     router.push(href)
   }
 
-  function toast({ title, description, variant }: { title: string; description: string; variant: string }) {
-    console.log(`[${variant.toUpperCase()}] ${title}: ${description}`)
-  }
-
-  // Animation variants for the dropdown and items
   const dropdownVariants = {
     hidden: { opacity: 0, y: -10, scale: 0.95 },
     visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2, ease: 'easeOut' } },
@@ -66,33 +59,8 @@ export default function DropdownMenu({
             <motion.div custom={0} variants={itemVariants} role="menuitem">
               <Button
                 variant="ghost"
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 
-                  hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 
-                  transition-colors duration-200"
-                onClick={async () => {
-                  setDropdownOpen(false)
-                  try {
-                    await openAccountModal?.()
-                  } catch {
-                    toast({
-                      title: 'Error',
-                      description: 'Failed to open account modal',
-                      variant: 'destructive',
-                    })
-                  }
-                }}
-              >
-                <User className="w-4 h-4" />
-                Account
-              </Button>
-            </motion.div>
-
-            <motion.div custom={1} variants={itemVariants} role="menuitem">
-              <Button
-                variant="ghost"
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 
-                  hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 
-                  transition-colors duration-200"
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-200 
+                  hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400"
                 onClick={() => handleNavigation(`/${userType}/dashboard`)}
               >
                 <LayoutDashboard className="w-4 h-4" />
@@ -100,37 +68,12 @@ export default function DropdownMenu({
               </Button>
             </motion.div>
 
-            <motion.div custom={2} variants={itemVariants} role="menuitem">
-              <Button
-                variant="ghost"
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 
-                  hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 
-                  transition-colors duration-200"
-                onClick={async () => {
-                  setDropdownOpen(false)
-                  try {
-                    await openChainModal?.()
-                  } catch {
-                    toast({
-                      title: 'Error',
-                      description: 'Failed to open chain modal',
-                      variant: 'destructive',
-                    })
-                  }
-                }}
-              >
-                <Network className="w-4 h-4" />
-                Switch Network
-              </Button>
-            </motion.div>
-
-            {userType === 'user' && (
-              <motion.div custom={3} variants={itemVariants} role="menuitem">
+            {userType === 'guest' && (
+              <motion.div custom={1} variants={itemVariants} role="menuitem">
                 <Button
                   variant="ghost"
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 
-                    hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 
-                    transition-colors duration-200"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-200 
+                    hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400"
                   onClick={() => handleNavigation('/anopro-apply')}
                 >
                   <UserPlus className="w-4 h-4" />
@@ -138,6 +81,21 @@ export default function DropdownMenu({
                 </Button>
               </motion.div>
             )}
+
+            <motion.div custom={2} variants={itemVariants} role="menuitem">
+              <Button
+                variant="ghost"
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-200 
+                  hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400"
+                onClick={() => {
+                  setDropdownOpen(false);
+                  onDisconnect();
+                }}
+              >
+                <LogOut className="w-4 h-4" />
+                Disconnect
+              </Button>
+            </motion.div>
           </div>
         </motion.div>
       )}

@@ -2,14 +2,10 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ConnectBtn } from '../web3/Web3Provider';
-import { emojiAvatarForAddress } from '../web3/emojiAvatarForAddress';
-import { useAccount } from 'wagmi';
+import { ConnectBtn } from '../web3/WalletConnect';
 import { cn } from "@/lib/utils";
 
 const Header: React.FC = () => {
-  const { address, isConnected } = useAccount();
-  const { color: backgroundColor, emoji } = emojiAvatarForAddress(address ?? '');
 
   return (
     <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 transition-all duration-300">
@@ -48,12 +44,7 @@ const Header: React.FC = () => {
         </nav>
         
         <div className="flex items-center space-x-4">
-          <ConnectBtn
-            backgroundColor={backgroundColor}
-            emoji={emoji}
-            isConnected={isConnected}
-            address={address}
-          />
+          <ConnectBtn />
           
           <button 
             className={cn(
