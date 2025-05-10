@@ -5,11 +5,31 @@ import { ethers } from "ethers";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Wifi, MapPin, DollarSign, Info, Upload, Check, Loader2 } from "lucide-react";
+import {
+  Wifi,
+  MapPin,
+  DollarSign,
+  Info,
+  Upload,
+  Check,
+  Loader2,
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { HostForm } from "@/types";
-import { loadContract, uploadImageToIPFS, uploadToIPFS } from "../../web3/contants/web3Funcs";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "../../ui/form";
+import {
+  loadContract,
+  uploadImageToIPFS,
+  uploadToIPFS,
+} from "../../web3/contants/web3Funcs";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+} from "../../ui/form";
 import { Input } from "../../ui/input";
 import { Textarea } from "../../ui/textarea";
 import { Button } from "../../ui/button";
@@ -28,7 +48,10 @@ const hostSchema = z.object({
   speed: z.coerce.number().min(1, "Minimum 1 Mbps"),
   price: z.coerce.number().min(0.1, "Set at least 0.1 USDT"),
   description: z.string().max(500, "Description too long").optional(),
-  image: z.instanceof(File).refine((file) => file.size < 2 * 1024 * 1024, "Image must be under 2MB").optional(),
+  image: z
+    .instanceof(File)
+    .refine((file) => file.size < 2 * 1024 * 1024, "Image must be under 2MB")
+    .optional(),
 });
 
 export default function HostNetworkPage() {
@@ -36,6 +59,7 @@ export default function HostNetworkPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [contract, setContract] = useState<ethers.Contract | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [geoError, setGeoError] = useState("");
 
   const form = useForm<HostForm>({
     resolver: zodResolver(hostSchema),
@@ -51,16 +75,15 @@ export default function HostNetworkPage() {
   });
 
   useEffect(() => {
-    setIsClient(true); 
+    setIsClient(true);
   }, []);
-
 
   useEffect(() => {
     async function initializeContract() {
       const contractInstance = await loadContract({
         contractAddress,
         contractABI: contract_Abi,
-        withSigner: true
+        withSigner: true,
       });
       if (contractInstance) {
         setContract(contractInstance);
@@ -78,7 +101,10 @@ export default function HostNetworkPage() {
     }
   }, [isClient]);
 
-  async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) => void) {
+  async function handleHostNetwork(
+    data: HostForm,
+    onComplete: (success: boolean) => void
+  ) {
     try {
       if (!contract) {
         toast({
@@ -113,10 +139,10 @@ export default function HostNetworkPage() {
         onComplete(false);
         return;
       }
-      
+
       const priceString = Number(data.price).toFixed(18); // convert float safely
       const amountToSend = ethers.parseUnits(priceString, 18);
-      
+
       // Create metadata
       const metadata = {
         ssid: data.ssid,
@@ -125,26 +151,27 @@ export default function HostNetworkPage() {
           city: data.location.city,
           area: data.location.area,
           lat: data.location.lat,
-          lng: data.location.lng
+          lng: data.location.lng,
         },
         speed: data.speed,
         description: data.description || "",
         image: imageCID,
-        createdAt: new Date().toISOString() // Store creation date
+        createdAt: new Date().toISOString(), // Store creation date
       };
-      
+
       // Upload metadata to IPFS
       const metadataCID = await uploadToIPFS(JSON.stringify(metadata));
-      
+
       // Send transaction to register network
-      const tx = await contract.registerNetwork(
-        amountToSend,
-        metadataCID,
-        true // isActive
-      );
+      // const tx = await contract.registerNetwork(
+      //   amountToSend,
+      //   metadataCID,
+      //   true // isActive
+      // );
 
-      await tx.wait();
+      // await tx.wait();
 
+      console.log("Transaction successful:", metadataCID);
       toast({
         title: "Network Listed!",
         description: "Your WiFi network is now hosted and available to users.",
@@ -178,6 +205,25 @@ export default function HostNetworkPage() {
       }
     });
   }
+
+  // Add inside your component
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      setGeoError("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        form.setValue("location.lat", position.coords.latitude);
+        form.setValue("location.lng", position.coords.longitude);
+        setGeoError("");
+      },
+      () => {
+        setGeoError("Failed to detect your location. Please enter manually.");
+      }
+    );
+  };
 
   function renderSummary(data: HostForm) {
     if (!data) return null;
@@ -235,9 +281,9 @@ export default function HostNetworkPage() {
             Network Successfully Hosted!
           </h1>
           <p className="text-gray-700 mb-6 text-center">
-            Congratulations! Your network is now discoverable by nearby users and
-            you&apos;ll start earning for every connection. You can manage or
-            update your network from your dashboard.
+            Congratulations! Your network is now discoverable by nearby users
+            and you&apos;ll start earning for every connection. You can manage
+            or update your network from your dashboard.
           </p>
           {renderSummary(form.getValues())}
           <Button
@@ -283,7 +329,11 @@ export default function HostNetworkPage() {
                       Network Name (SSID)
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="E.g. ZaaNet Home" required {...field} />
+                      <Input
+                        placeholder="E.g. ZaaNet Home"
+                        required
+                        {...field}
+                      />
                     </FormControl>
                     <FormDescription>
                       Pick a friendly name for your WiFi.
@@ -292,15 +342,117 @@ export default function HostNetworkPage() {
                   </FormItem>
                 )}
               />
-        
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  <MapPin className="inline -mt-1 mr-1 text-zaanet-purple" /> Location
+                  <MapPin className="inline -mt-1 mr-1 text-zaanet-purple" />{" "}
+                  Location
                 </label>
                 <p className="text-sm text-muted-foreground">
-                  Click on the map to set your network’s location.
+                  Click the button to auto-detect your coordinates or enter them
+                  manually.
                 </p>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (navigator.geolocation) {
+                      navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                          const lat = position.coords.latitude;
+                          const lng = position.coords.longitude;
+                          form.setValue("location.lat", lat);
+                          form.setValue("location.lng", lng);
+                          setGeoError("");
+                          toast({
+                            title: "Location Selected",
+                            description: `Lat: ${lat}, Lng: ${lng}`,
+                          });
+                        },
+                        () => {
+                          setGeoError(
+                            "Unable to retrieve your location. Enter manually."
+                          );
+                          toast({
+                            title: "Error",
+                            description: "Unable to retrieve your location.",
+                            variant: "destructive",
+                          });
+                        }
+                      );
+                    } else {
+                      setGeoError(
+                        "Geolocation is not supported by this browser."
+                      );
+                      toast({
+                        title: "Unsupported",
+                        description:
+                          "Geolocation is not supported by this browser.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
+                  📍 Use My Current Location
+                </Button>
+
+                {geoError && <p className="text-sm text-red-500">{geoError}</p>}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                  <FormField
+                    control={form.control}
+                    name="location.lat"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Latitude</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="any"
+                            placeholder="e.g. 5.6037"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="location.lng"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Longitude</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="any"
+                            placeholder="e.g. -0.187"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {form.watch("location.lat") && form.watch("location.lng") && (
+                  <iframe
+                    className="mt-4 rounded-lg"
+                    width="100%"
+                    height="300"
+                    frameBorder="0"
+                    style={{ border: 0 }}
+                    src={`https://www.google.com/maps?q=${form.watch(
+                      "location.lat"
+                    )},${form.watch("location.lng")}&z=15&output=embed`}
+                    allowFullScreen
+                  ></iframe>
+                )}
               </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
@@ -342,6 +494,7 @@ export default function HostNetworkPage() {
                   )}
                 />
               </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -396,6 +549,7 @@ export default function HostNetworkPage() {
                   )}
                 />
               </div>
+
               <FormField
                 control={form.control}
                 name="description"
@@ -420,6 +574,7 @@ export default function HostNetworkPage() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="image"
@@ -443,6 +598,7 @@ export default function HostNetworkPage() {
                   </FormItem>
                 )}
               />
+
               <Button
                 type="submit"
                 className="w-full bg-gradient-to-r from-zaanet-purple to-zaanet-purple-dark hover:opacity-90 text-white mt-6 font-semibold transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"

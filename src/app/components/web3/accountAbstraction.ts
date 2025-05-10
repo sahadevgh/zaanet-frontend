@@ -10,11 +10,9 @@ import { privateKeyToAccount } from "viem/accounts";
 import { arbitrumSepolia } from "viem/chains";
 import { Web3Auth } from "@web3auth/modal";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
-import dotenv from "dotenv";
 
-dotenv.config();
-
-const ZERODEV_RPC = `https://rpc.zerodev.app/api/v2/bundler/${process.env.ZERO_DEV_PROJECT_ID}?chainId=421614`;
+const ZERODEV_RPC = `https://rpc.zerodev.app/api/v3/${process.env.NEXT_PUBLIC_ZERO_DEV_PROJECT_ID}/chain/421614`;
+const chainIdHex = "0x66eee"; // Arbitrum Sepolia chain ID in hex
 
 const chain = arbitrumSepolia;
 const entryPoint = getEntryPoint("0.7");
@@ -26,22 +24,23 @@ export async function initSmartAccountClient() {
     const privateKeyProvider = new EthereumPrivateKeyProvider({
       config: {
         chainConfig: {
-          chainId: "0x69F2", // 421614 in hex
+          chainNamespace: "eip155",
+          chainId: chainIdHex,
           rpcTarget: ZERODEV_RPC,
           displayName: "Arbitrum Sepolia",
           blockExplorerUrl: "https://sepolia.arbiscan.io",
           ticker: "ETH",
           tickerName: "Ethereum",
-          chainNamespace: "eip155",
         },
       },
     });
 
     const web3auth = new Web3Auth({
-      clientId: `${process.env.WEB3AUTH_CLIENT_ID}`,
+      clientId: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID!,
+      web3AuthNetwork: "sapphire_devnet", // or "sapphire_mainnet" if in production
       chainConfig: {
         chainNamespace: "eip155",
-        chainId: "0x69F2",
+        chainId: chainIdHex,
         rpcTarget: ZERODEV_RPC,
       },
       privateKeyProvider,
@@ -59,7 +58,7 @@ export async function initSmartAccountClient() {
     if (privateKey) {
       signer = privateKeyToAccount(`0x${privateKey}`);
     } else {
-      const rawKey = process.env.PRIVATE_KEY;
+      const rawKey = process.env.NEXT_PUBLIC_PRIVATE_KEY;
       if (!rawKey) throw new Error("Missing PRIVATE_KEY in environment");
 
       const normalizedKey = rawKey.startsWith("0x") ? rawKey : `0x${rawKey}`;

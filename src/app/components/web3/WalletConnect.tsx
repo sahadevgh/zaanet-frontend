@@ -18,7 +18,7 @@ interface ConnectBtnProps {
 export const ConnectBtn = ({
 }: ConnectBtnProps) => {
   const { isConnected, userType, address, connect, disconnect } = useSmartAccount();
-
+console.log('address', address  );
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const isMounted = useRef(false);
