@@ -13,14 +13,11 @@ import {
   Upload,
   Check,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { HostForm } from "@/types";
-import {
-  loadContract,
-  uploadImageToIPFS,
-  uploadToIPFS,
-} from "../../web3/contants/web3Funcs";
+import { uploadImageToIPFS, uploadToIPFS } from "../../web3/contants/web3Funcs";
 import {
   Form,
   FormField,
@@ -34,6 +31,11 @@ import { Input } from "../../ui/input";
 import { Textarea } from "../../ui/textarea";
 import { Button } from "../../ui/button";
 import { contract_Abi, contractAddress } from "../../web3/contants/projectData";
+import { useSmartAccount } from "../../web3/SmartAccountProvider";
+import { Alert, AlertDescription, AlertTitle } from "../../ui/alert";
+import { createPublicClient, encodeFunctionData, http } from "viem";
+import { arbitrumSepolia } from "viem/chains";
+import { initSmartAccountClient } from "../../web3/accountAbstraction";
 
 // Zod schema
 const hostSchema = z.object({
@@ -54,7 +56,19 @@ const hostSchema = z.object({
     .optional(),
 });
 
+// Chain configuration
+const chain = arbitrumSepolia;
+
+// Public client for chain queries
+export const publicClient = createPublicClient({
+  chain,
+  transport: http(),
+});
+
 export default function HostNetworkPage() {
+  const { isConnected, userType, address, connect, disconnect } =
+    useSmartAccount();
+
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [contract, setContract] = useState<ethers.Contract | null>(null);
@@ -78,38 +92,15 @@ export default function HostNetworkPage() {
     setIsClient(true);
   }, []);
 
-  useEffect(() => {
-    async function initializeContract() {
-      const contractInstance = await loadContract({
-        contractAddress,
-        contractABI: contract_Abi,
-        withSigner: true,
-      });
-      if (contractInstance) {
-        setContract(contractInstance);
-      } else {
-        console.error("Failed to load contract");
-        toast({
-          title: "Error",
-          description: "Failed to load blockchain contract.",
-          variant: "destructive",
-        });
-      }
-    }
-    if (isClient) {
-      initializeContract();
-    }
-  }, [isClient]);
-
   async function handleHostNetwork(
     data: HostForm,
     onComplete: (success: boolean) => void
   ) {
     try {
-      if (!contract) {
+      if (!isConnected) {
         toast({
           title: "Error",
-          description: "Contract or wallet not loaded.",
+          description: "Account is not connected.",
           variant: "destructive",
         });
         onComplete(false);
@@ -163,15 +154,21 @@ export default function HostNetworkPage() {
       const metadataCID = await uploadToIPFS(JSON.stringify(metadata));
 
       // Send transaction to register network
-      // const tx = await contract.registerNetwork(
-      //   amountToSend,
-      //   metadataCID,
-      //   true // isActive
-      // );
+      const encodedCallData = encodeFunctionData({
+        abi: contract_Abi,
+        functionName: "hostANetwork",
+        args: [amountToSend, metadataCID],
+      });
 
-      // await tx.wait();
+      const kernelClient = await initSmartAccountClient();
+      const txHash = await kernelClient.sendTransaction({
+        to: contractAddress,
+        data: encodedCallData,
+        value: 0n,
+      });
 
-      console.log("Transaction successful:", metadataCID);
+      await publicClient.waitForTransactionReceipt({ hash: txHash });
+
       toast({
         title: "Network Listed!",
         description: "Your WiFi network is now hosted and available to users.",
@@ -319,9 +316,23 @@ export default function HostNetworkPage() {
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl mb-12 animate-fade-in">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid gap-6">
+                {!isConnected && (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Account Required</AlertTitle>
+                    <AlertDescription>
+                      You must connect a your account to become a provider. This
+                      is required for receiving payments and managing your
+                      hosted account.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
               <FormField
                 control={form.control}
                 name="ssid"
+                disabled={!isConnected}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
@@ -356,6 +367,7 @@ export default function HostNetworkPage() {
                 <Button
                   type="button"
                   variant="outline"
+                  disabled={!isConnected}
                   onClick={() => {
                     if (navigator.geolocation) {
                       navigator.geolocation.getCurrentPosition(
@@ -403,6 +415,7 @@ export default function HostNetworkPage() {
                   <FormField
                     control={form.control}
                     name="location.lat"
+                    disabled={!isConnected}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Latitude</FormLabel>
@@ -421,6 +434,7 @@ export default function HostNetworkPage() {
                   <FormField
                     control={form.control}
                     name="location.lng"
+                    disabled={!isConnected}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Longitude</FormLabel>
@@ -444,6 +458,7 @@ export default function HostNetworkPage() {
                     width="100%"
                     height="300"
                     frameBorder="0"
+                    loading="lazy"
                     style={{ border: 0 }}
                     src={`https://www.google.com/maps?q=${form.watch(
                       "location.lat"
@@ -457,6 +472,7 @@ export default function HostNetworkPage() {
                 <FormField
                   control={form.control}
                   name="location.country"
+                  disabled={!isConnected}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Country</FormLabel>
@@ -470,6 +486,7 @@ export default function HostNetworkPage() {
                 <FormField
                   control={form.control}
                   name="location.city"
+                  disabled={!isConnected}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>City</FormLabel>
@@ -483,6 +500,7 @@ export default function HostNetworkPage() {
                 <FormField
                   control={form.control}
                   name="location.area"
+                  disabled={!isConnected}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Area</FormLabel>
@@ -498,6 +516,7 @@ export default function HostNetworkPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
+                  disabled={!isConnected}
                   name="speed"
                   render={({ field }) => (
                     <FormItem>
@@ -525,6 +544,7 @@ export default function HostNetworkPage() {
                 <FormField
                   control={form.control}
                   name="price"
+                  disabled={!isConnected}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
@@ -553,6 +573,7 @@ export default function HostNetworkPage() {
               <FormField
                 control={form.control}
                 name="description"
+                disabled={!isConnected}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
@@ -578,6 +599,7 @@ export default function HostNetworkPage() {
               <FormField
                 control={form.control}
                 name="image"
+                disabled={!isConnected}
                 render={({ field: { onChange } }) => (
                   <FormItem>
                     <FormLabel>
@@ -603,7 +625,7 @@ export default function HostNetworkPage() {
                 type="submit"
                 className="w-full bg-gradient-to-r from-zaanet-purple to-zaanet-purple-dark hover:opacity-90 text-white mt-6 font-semibold transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                 size="lg"
-                disabled={isLoading}
+                disabled={isLoading || !isConnected}
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">

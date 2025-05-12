@@ -18,7 +18,7 @@ export const loadContract = async ({
     let signerOrProvider: ethers.Signer | ethers.Provider;
 
     if (withSigner) {
-      if (!window.ethereum) {
+      if (!window?.ethereum) {
         toast({
           title: "Error",
           description: "Please install MetaMask or another Ethereum wallet.",
@@ -26,7 +26,7 @@ export const loadContract = async ({
         });
         return;
       }
-      provider = new ethers.BrowserProvider(window.ethereum);
+      provider = new ethers.BrowserProvider(window?.ethereum);
 
       const network = await provider.getNetwork();
       const expectedChainId = process.env.NEXT_PUBLIC_CHAIN_ID || "421614";
@@ -120,3 +120,5 @@ export async function uploadToIPFS(encryptedText: string): Promise<string> {
   }
   return result.IpfsHash;
 }
+
+

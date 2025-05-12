@@ -5,12 +5,12 @@ import {
 } from "@zerodev/sdk";
 import { KERNEL_V3_1, getEntryPoint } from "@zerodev/sdk/constants";
 import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
-import { http, createPublicClient } from "viem";
+import { http, createPublicClient, Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { arbitrumSepolia } from "viem/chains";
 import { Web3Auth } from "@web3auth/modal";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
-
+import axios from "axios";
 const ZERODEV_RPC = `https://rpc.zerodev.app/api/v3/${process.env.NEXT_PUBLIC_ZERO_DEV_PROJECT_ID}/chain/421614`;
 const chainIdHex = "0x66eee"; // Arbitrum Sepolia chain ID in hex
 
@@ -18,7 +18,7 @@ const chain = arbitrumSepolia;
 const entryPoint = getEntryPoint("0.7");
 const kernelVersion = KERNEL_V3_1;
 
-export async function initSmartAccountClient() {
+export async function initSmartAccountClient(forceModal = false) {
   try {
     // Web3Auth configuration
     const privateKeyProvider = new EthereumPrivateKeyProvider({
@@ -37,7 +37,7 @@ export async function initSmartAccountClient() {
 
     const web3auth = new Web3Auth({
       clientId: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID!,
-      web3AuthNetwork: "sapphire_devnet", // or "sapphire_mainnet" if in production
+      web3AuthNetwork: "sapphire_devnet", // Using Sapphire Devnet for testing, to be changed in production
       chainConfig: {
         chainNamespace: "eip155",
         chainId: chainIdHex,
@@ -47,7 +47,12 @@ export async function initSmartAccountClient() {
     });
 
     await web3auth.initModal();
+      // 🔥 Force logout if requested (to always show modal)
+      if (forceModal && web3auth.connected) {
+        await web3auth.logout();
+      }
     await web3auth.connect();
+    const userInfo = await web3auth.getUserInfo();
 
     let signer;
     const privateKey = (await privateKeyProvider.request({
@@ -101,9 +106,41 @@ export async function initSmartAccountClient() {
       },
     });
 
+    // Prepare user info to send to database
+    const userInfoToSend = {
+      email: userInfo.email ?? null,
+      name: userInfo.name || "Unnamed User",
+      walletAddress: kernelClient.account.address.toLowerCase(),
+    };
+
+    console.log("User info to send:", userInfoToSend);
+
+    // await sendUserInfoToDatabase({ userInfo: userInfoToSend });
+
     return kernelClient;
   } catch (error) {
     console.error("Failed to initialize ZeroDev smart account client:", error);
     throw error;
+  }
+}
+
+// Funtion to take user information to send to database using axios
+async function sendUserInfoToDatabase({
+  userInfo,
+}: {
+  userInfo: {
+    email: string | undefined | null;
+    name: string | null | undefined;
+    walletAddress: string | Address | undefined;
+  };
+}) {
+  try {
+    const response = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_URL}/user-info`,
+      userInfo
+    );
+    console.log("User info sent to database:", response.data);
+  } catch (error) {
+    console.error("Error sending user info to database:", error);
   }
 }

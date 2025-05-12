@@ -2,6 +2,7 @@
 // Application main contract address
 export const contractAddress = "0xE76aA8747052075c1adFcA80478095fAB1702Cf2";
 export const usdtContractAddress = "0xBD3822E1949DD2E187da0c3a0F8585f60D512D91";
+export const tokenContractAddress = "0xBD3822E1949DD2E187da0c3a0F8585f60D512D91";
 
 export const usdtAbi = [
   {

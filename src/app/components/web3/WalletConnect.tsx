@@ -18,7 +18,6 @@ interface ConnectBtnProps {
 export const ConnectBtn = ({
 }: ConnectBtnProps) => {
   const { isConnected, userType, address, connect, disconnect } = useSmartAccount();
-console.log('address', address  );
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const isMounted = useRef(false);
@@ -100,6 +99,9 @@ console.log('address', address  );
         setDropdownOpen={setDropdownOpen}
         userType={userType}
         onDisconnect={disconnect}
+        onSwitchAccount={async () => {
+          await connect(true); // force modal
+        }}      
       />
     </div>
   );

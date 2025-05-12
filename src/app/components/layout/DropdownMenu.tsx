@@ -3,13 +3,14 @@
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '../ui/button'
-import { LayoutDashboard, LogOut, UserPlus } from 'lucide-react'
+import { LayoutDashboard, LogOut, UserPlus, RefreshCw, ChevronRight } from 'lucide-react'
 
 type DropdownMenuProps = {
   dropdownOpen: boolean
   setDropdownOpen: (value: boolean) => void
   userType: string
   onDisconnect: () => void
+  onSwitchAccount: () => void
 }
 
 export default function DropdownMenu({
@@ -17,6 +18,7 @@ export default function DropdownMenu({
   setDropdownOpen,
   userType,
   onDisconnect,
+  onSwitchAccount
 }: DropdownMenuProps) {
   const router = useRouter()
 
@@ -27,17 +29,35 @@ export default function DropdownMenu({
 
   const dropdownVariants = {
     hidden: { opacity: 0, y: -10, scale: 0.95 },
-    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2, ease: 'easeOut' } },
-    exit: { opacity: 0, y: -10, scale: 0.95, transition: { duration: 0.15 } },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      scale: 1, 
+      transition: { 
+        duration: 0.2, 
+        ease: [0.4, 0, 0.2, 1],
+        when: "beforeChildren",
+        staggerChildren: 0.05
+      } 
+    },
+    exit: { 
+      opacity: 0, 
+      y: -10, 
+      scale: 0.95, 
+      transition: { 
+        duration: 0.15,
+        ease: [0.4, 0, 1, 1]
+      } 
+    },
   }
 
   const itemVariants = {
     hidden: { opacity: 0, x: -10 },
-    visible: (i: number) => ({
+    visible: {
       opacity: 1,
       x: 0,
-      transition: { delay: i * 0.05, duration: 0.2 },
-    }),
+      transition: { duration: 0.2 }
+    },
   }
 
   return (
@@ -48,52 +68,99 @@ export default function DropdownMenu({
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="absolute right-0 mt-2 w-52 rounded-xl shadow-2xl z-50 top-12 
-            border border-gray-200 dark:border-gray-800 overflow-hidden 
-            bg-gradient-to-r from-zaanet-purple-dark to-zaanet-purple"
+          className="absolute right-0 mt-2 w-56 rounded-lg shadow-xl z-50 top-12 
+            border border-gray-200 dark:border-gray-700 overflow-hidden 
+            bg-gradient-to-br from-zaanet-purple-dark to-purple-900 backdrop-blur-sm"
           role="menu"
           aria-orientation="vertical"
           aria-labelledby="menu-button"
         >
-          <div className="w-full py-2 relative flex flex-col gap-1 items-start">
-            <motion.div custom={0} variants={itemVariants} role="menuitem">
+          <div className="w-full py-1 relative flex flex-col items-start">
+            {/* Dashboard */}
+            <motion.div 
+              variants={itemVariants}
+              className="w-full border-b border-white/10"
+              role="menuitem"
+            >
               <Button
                 variant="ghost"
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-200 
-                  hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400"
+                className="w-full flex justify-between items-center px-4 py-3 text-sm font-medium text-white 
+                  hover:bg-white/10 transition-colors"
                 onClick={() => handleNavigation(`/${userType}/dashboard`)}
               >
-                <LayoutDashboard className="w-4 h-4" />
-                Dashboard
+                <div className="flex items-center gap-3">
+                  <LayoutDashboard className="w-4 h-4" />
+                  Dashboard
+                </div>
+                <ChevronRight className="w-4 h-4 opacity-70" />
               </Button>
             </motion.div>
 
+            {/* Switch Account */}
+            <motion.div 
+              variants={itemVariants}
+              className="w-full border-b border-white/10"
+              role="menuitem"
+            >
+              <Button
+                variant="ghost"
+                className="w-full flex justify-between items-center px-4 py-3 text-sm font-medium text-white 
+                  hover:bg-white/10 transition-colors"
+                onClick={() => {
+                  setDropdownOpen(false)
+                  onSwitchAccount()
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <RefreshCw className="w-4 h-4" />
+                  Switch Account
+                </div>
+                <ChevronRight className="w-4 h-4 opacity-70" />
+              </Button>
+            </motion.div>
+
+            {/* Become a Host (only for guests) */}
             {userType === 'guest' && (
-              <motion.div custom={1} variants={itemVariants} role="menuitem">
+              <motion.div 
+                variants={itemVariants}
+                className="w-full border-b border-white/10"
+                role="menuitem"
+              >
                 <Button
                   variant="ghost"
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-200 
-                    hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400"
+                  className="w-full flex justify-between items-center px-4 py-3 text-sm font-medium text-white 
+                    hover:bg-white/10 transition-colors"
                   onClick={() => handleNavigation('/anopro-apply')}
                 >
-                  <UserPlus className="w-4 h-4" />
-                  Become a Host
+                  <div className="flex items-center gap-3">
+                    <UserPlus className="w-4 h-4" />
+                    Become a Host
+                  </div>
+                  <ChevronRight className="w-4 h-4 opacity-70" />
                 </Button>
               </motion.div>
             )}
 
-            <motion.div custom={2} variants={itemVariants} role="menuitem">
+            {/* Disconnect */}
+            <motion.div 
+              variants={itemVariants}
+              className="w-full"
+              role="menuitem"
+            >
               <Button
                 variant="ghost"
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-200 
-                  hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400"
+                className="w-full flex justify-between items-center px-4 py-3 text-sm font-medium text-white 
+                  hover:bg-red-500/20 hover:text-red-100 transition-colors"
                 onClick={() => {
-                  setDropdownOpen(false);
-                  onDisconnect();
+                  setDropdownOpen(false)
+                  onDisconnect()
                 }}
               >
-                <LogOut className="w-4 h-4" />
-                Disconnect
+                <div className="flex items-center gap-3">
+                  <LogOut className="w-4 h-4" />
+                  Disconnect
+                </div>
+                <ChevronRight className="w-4 h-4 opacity-70" />
               </Button>
             </motion.div>
           </div>
