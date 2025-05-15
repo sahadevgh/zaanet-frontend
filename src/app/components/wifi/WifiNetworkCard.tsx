@@ -1,32 +1,30 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ethers } from "ethers";
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from "@/app/components/ui/card";
-import { Button } from "@/app/components/ui/button";
-import {
-  Wifi,
-  MapPin,
-  Gauge,
-  HardDrive,
-  Clock,
-} from "lucide-react";
+import { Wifi, MapPin, Star, User, CheckCircle, Signal } from "lucide-react";
 import type { WifiNetwork } from "@/types";
-import Image from "next/image";
+import { formatUnits } from "viem";
+import { cn } from "@/lib/utils";
+import { Card, CardContent } from "../ui/card";
 
 interface WifiNetworkCardProps {
-  network: WifiNetwork;
-  address: string;
-  contract: ethers.Contract | null;
-  setOpenConManagerModal: (value: boolean) => void;
-  setIsSetNetwork: (network: WifiNetwork) => void;
+  id: string;
+  name: string;
+  price: number;
+  hostWallet: string;
+  ratingCount: number;
+  successfullSessions: number;
+  totalRating: number;
+  location: {
+    country: string;
+    city: string;
+    area: string;
+    lat: number;
+    lng: number;
+  };
+  speed: number;
+  description?: string;
+  image?: File;
 }
 
 const getGradientClass = (id: string) => {
@@ -36,236 +34,138 @@ const getGradientClass = (id: string) => {
   }
 
   const gradients = [
-    "bg-gradient-to-r from-purple-500 to-pink-500",
-    "bg-gradient-to-r from-blue-500 to-cyan-500",
-    "bg-gradient-to-r from-green-500 to-teal-500",
-    "bg-gradient-to-r from-yellow-500 to-orange-500",
-    "bg-gradient-to-r from-red-500 to-pink-500",
-    "bg-gradient-to-r from-indigo-500 to-purple-500",
-    "bg-gradient-to-r from-emerald-500 to-blue-500",
-    "bg-gradient-to-r from-amber-500 to-red-500",
+    "from-purple-500 to-pink-500",
+    "from-blue-500 to-indigo-700",
+    "from-green-500 to-teal-500",
+    "from-blue-600 to-blue-950",
+    "from-slate-700 to-slate-950",
+    "from-indigo-500 to-purple-500",
+    "from-emerald-500 to-blue-500",
+    "from-amber-500 to-gray-800",
   ];
 
   return gradients[Math.abs(hash) % gradients.length];
 };
 
 const WifiNetworkCard: React.FC<WifiNetworkCardProps> = ({
-  network,
-  address,
-  contract,
-  setOpenConManagerModal,
-  setIsSetNetwork,
+  id,
+  name,
+  price,
+  hostWallet,
+  ratingCount,
+  successfullSessions,
+  totalRating,
+  location,
+  speed,
+  description,
+  image,
 }) => {
-  const [hasPaid, setHasPaid] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
-
+  const gradient = getGradientClass(id);
+  const averageRating = ratingCount > 0 ? (totalRating / ratingCount).toFixed(1) : "0.0";
 
   useEffect(() => {
-    const fetchImage = async () => {
-      if (!network.imageCID) {
-        setImageLoading(false);
-        setImageError(true);
-        return;
-      }
+    if (!image) {
+      setImageError(true);
+      return;
+    }
 
-      try {
-        setImageLoading(true);
-        const response = await fetch(`https://ipfs.io/ipfs/${network.imageCID}`);
-        if (!response.ok) throw new Error("Failed to fetch image");
-        const blob = await response.blob();
+    fetch(`https://ipfs.io/ipfs/${image}`)
+      .then((res) => res.ok ? res.blob() : Promise.reject())
+      .then((blob) => {
         const url = URL.createObjectURL(blob);
         setImageUrl(url);
-        setImageError(false);
-      } catch (err) {
-        console.error("Error loading image:", err);
-        setImageError(true);
-      } finally {
-        setImageLoading(false);
-      }
-    };
-
-    fetchImage();
+      })
+      .catch(() => setImageError(true));
 
     return () => {
-      if (imageUrl) {
-        URL.revokeObjectURL(imageUrl);
-      }
+      if (imageUrl) URL.revokeObjectURL(imageUrl);
     };
-  }, [network.imageCID, imageUrl]);
+  }, [image]);
 
+  const getSignalStrength = (speed: number) => {
+    if (speed >= 100) return 4;
+    if (speed >= 50) return 3;
+    if (speed >= 25) return 2;
+    return 1;
+  };
 
-  useEffect(() => {
-    if (!contract || !address) return;
-
-    const handlePaymentSuccess = async (_networkId: string, payer: string) => {
-      if (
-        _networkId == network.id &&
-        payer.toLowerCase() === address.toLowerCase()
-      ) {
-        setHasPaid(true);
-      }
-    };
-
-    contract.on("PaymentReceived", handlePaymentSuccess);
-
-    return () => {
-      contract.off("PaymentReceived", handlePaymentSuccess);
-    };
-  }, [contract, address, network.id]);
-
-
-  useEffect(() => {
-    const checkSession = async () => {
-      if (!contract || !address) return;
-      try {
-        const { data } = await api.get(`/get-session/${network.id}/${address}`);
-        setHasPaid(data.active);
-      } catch (err) {
-        console.error('Error checking session:', err);
-      }
-    };
-    checkSession();
-  }, [address, contract, network.id]);
+  const signalStrength = getSignalStrength(speed);
 
   return (
-    <Card
-      className={`relative overflow-hidden transition-all duration-300 bg-zaanet-purple-light ${
-        isHovered ? "shadow-lg" : "shadow-md"
-      } border border-gray-200 dark:border-gray-700/25`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <Card className="relative overflow-hidden bg-blue-900 border border-blue-200/25 shadow hover:shadow-lg transition-all duration-300">
+      {/* Image */}
       <div className="relative h-40 w-full overflow-hidden">
-        {imageLoading ? (
+        {imageUrl && !imageError ? (
           <div
-            className={`animate-pulse bg-gradient-to-r ${getGradientClass(
-              network.id.toString()
-            )} w-full h-full`}
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${imageUrl})` }}
           />
-        ) : imageUrl && !imageError ? (
-          <>
-            <Image
-              src={imageUrl}
-              alt={network.name}
-              fill
-              className="object-cover transition-transform duration-500"
-              style={{ transform: isHovered ? "scale(1.05)" : "scale(1)" }}
-              onError={() => setImageError(true)}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-          </>
         ) : (
-          <div
-            className={`h-full w-full flex items-center justify-center ${getGradientClass(
-              network.id.toString()
-            )}`}
-          >
-            <div className="text-white text-4xl font-bold opacity-80">
-              {network.name.charAt(0).toUpperCase()}
-            </div>
+          <div className={`h-full w-full bg-gradient-to-r ${gradient} flex items-center justify-center`}>
+            <span className="text-white text-4xl font-bold">{name.charAt(0).toUpperCase()}</span>
           </div>
         )}
+        <div className="absolute top-3 left-3 bg-black/50 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1">
+          <Wifi size={12} />
+          {name}
+        </div>
+        <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs px-3 py-1 rounded-full">
+          {formatUnits(BigInt(price), 18)} USDT/hr
+        </div>
       </div>
 
-      <CardHeader className="flex flex-row items-start gap-4 pb-2">
-        <div className="bg-purple-100 dark:bg-purple-900/50 rounded-full p-3">
-          <Wifi className="text-purple-600 dark:text-zaanet-purple-light" size={20} />
-        </div>
-        <div>
-          <CardTitle className="text-xl font-bold text-gray-900">
-            {network.name}
-          </CardTitle>
-          <CardDescription className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-900">
+      <CardContent className="p-4 flex flex-col gap-4">
+        {/* Location & Rating */}
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-1 text-blue-200 text-sm">
             <MapPin size={14} />
-            {network.location.city}, {network.location.area}
-          </CardDescription>
-        </div>
-      </CardHeader>
-
-      <CardContent className="pt-0 flex flex-col gap-4">
-        {network.description && (
-          <p className="text-sm text-gray-600 dark:text-gray-600">
-            {network.description}
-          </p>
-        )}
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-2">
-            <Gauge size={16} className="text-purple-500" />
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-900">Speed</p>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-900">
-                {network.wifispeed} Mbps
-              </p>
-            </div>
+            {location.city}, {location.area}
           </div>
-          <div className="flex items-center gap-2">
-            <HardDrive size={16} className="text-purple-500" />
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-900">Type</p>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-900">
-                {network.type || "WiFi 6"}
-              </p>
-            </div>
+          <div className="flex items-center gap-1 text-xs font-bold text-yellow-400">
+            <Star size={12} fill="currentColor" />
+            {averageRating} ({ratingCount})
           </div>
         </div>
 
-        {hasPaid && (
-          <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="flex items-center justify-center">
-              <div className="flex items-center gap-2">
-                <Clock className="text-purple-500" size={16} />
-                <span className="text-sm font-medium">Remaining Time</span>
-              </div>
-            </div>
+        {/* Speed */}
+        <div className="flex justify-between items-center border-b border-muted pb-2">
+          <div className="flex items-center gap-2">
+            <Signal size={16} className="text-green-600" />
+            <div className="text-sm font-medium">{speed} Mbps</div>
           </div>
+          <div className="flex gap-0.5">
+            {[1, 2, 3, 4].map((bar) => (
+              <div
+                key={bar}
+                className={cn(
+                  "w-1 rounded-full",
+                  bar <= signalStrength ? "bg-green-600" : "bg-muted",
+                  bar === 1 ? "h-1" : bar === 2 ? "h-2" : bar === 3 ? "h-3" : "h-4"
+                )}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Host & Stats */}
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="flex items-center gap-2">
+            <User size={14} className="text-green-600" />
+            {successfullSessions} Sessions
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle size={14} className="text-green-600" />
+            {hostWallet.slice(0, 4)}...{hostWallet.slice(-4)}
+          </div>
+        </div>
+
+        {/* Description */}
+        {description && (
+          <p className="text-xs text-muted-foreground line-clamp-2">{description}</p>
         )}
       </CardContent>
-
-      <CardFooter className="flex flex-col gap-3 pt-0">
-        <div className="w-full flex justify-between items-center">
-          <span className="text-xs text-gray-500 dark:text-gray-900">
-            Coordinates: {Number(network.location.lat).toFixed(4)},{" "}
-            {Number(network.location.lng).toFixed(4)}
-          </span>
-          <span className="text-lg font-bold text-purple-600 dark:text-purple-400">
-            {network.price} USDT
-          </span>
-        </div>
-
-        <Button
-          size="lg"
-          className={`w-full transition-all duration-300 ${
-            hasPaid
-              ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800"
-              : "bg-purple-600 hover:bg-purple-700 text-white"
-          }`}
-          onClick={() => {
-            setIsSetNetwork(network);
-            setOpenConManagerModal(true);
-          }}
-          disabled={hasPaid}
-        >
-          {hasPaid ? (
-            <div className="flex items-center gap-2">
-              <span>Connected</span>
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            </div>
-          ) : (
-            "Connect to Network"
-          )}
-        </Button>
-      </CardFooter>
-
-      {hasPaid && (
-        <div className="absolute top-4 right-4 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          Active
-        </div>
-      )}
     </Card>
   );
 };

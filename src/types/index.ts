@@ -3,12 +3,24 @@
 
 export type WifiNetwork = {
   id: string;
-  metaDataCID: string;
-  price: string;
+  metadataCID: string;
+  price: number;
   hostWallet: string;
-  hasPaid?: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  ratingCount: number;
+  successfullSessions: number;
+  totalRating: number;
+  ssid: string;
+  name: string;
+  location: {
+    country: string;
+    city: string;
+    area: string;
+    lat: number;
+    lng: number;
+  };
+  speed: number;
+  description?: string;
+  image?: File;
 };
 
 

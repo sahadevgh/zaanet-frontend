@@ -7,9 +7,9 @@ import StepsSection from "@/app/components/layout/home-page/StepsSection";
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-900 to-black">
     <Header />
-    <main className="flex-grow">
+    <main className="flex-grow bg-transparent">
       <HeroSection />
       <FeaturesSection />
       <StepsSection />

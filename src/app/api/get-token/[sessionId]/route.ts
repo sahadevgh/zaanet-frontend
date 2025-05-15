@@ -13,7 +13,7 @@ export async function GET(
     await connectToDatabase();
 
     // Find an active session matching the sessionId
-    const session = await sessionModel.findOne({ sessionId, active: true });
+    const session = await sessionModel.findOne({ sessionId, status: "pending" });
 
     if (!session) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });

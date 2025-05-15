@@ -11,7 +11,8 @@ import { arbitrumSepolia } from "viem/chains";
 import { Web3Auth } from "@web3auth/modal";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import axios from "axios";
-const ZERODEV_RPC = `https://rpc.zerodev.app/api/v3/${process.env.NEXT_PUBLIC_ZERO_DEV_PROJECT_ID}/chain/421614`;
+import { ZERODEV_RPC } from "./contants/projectData";
+
 const chainIdHex = "0x66eee"; // Arbitrum Sepolia chain ID in hex
 
 const chain = arbitrumSepolia;
@@ -47,10 +48,10 @@ export async function initSmartAccountClient(forceModal = false) {
     });
 
     await web3auth.initModal();
-      // 🔥 Force logout if requested (to always show modal)
-      if (forceModal && web3auth.connected) {
-        await web3auth.logout();
-      }
+    // Force logout if requested (to always show modal)
+    if (forceModal && web3auth.connected) {
+      await web3auth.logout();
+    }
     await web3auth.connect();
     const userInfo = await web3auth.getUserInfo();
 

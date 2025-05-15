@@ -48,9 +48,8 @@ export const ConnectBtn = ({
         size="lg"
         className={cn(
           "relative overflow-hidden",
-          "hover:bg-zaanet-purple-dark hover:border-zaanet-purple-dark hover:text-zaanet-purple-light",
           "transition-all duration-300 ease-out transform hover:scale-[1.02]",
-          "focus:outline-none focus:ring-2 focus:ring-zaanet-purple focus:ring-offset-2",
+          "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
           "disabled:opacity-50 disabled:cursor-not-allowed"
         )}
       >
@@ -63,7 +62,7 @@ export const ConnectBtn = ({
           ) : (
             <>
               <Wallet className="w-5 h-5" />
-              <span>Login with Web3Auth</span>
+              <span>Connect Account</span>
             </>
           )}
         </div>
@@ -80,7 +79,7 @@ export const ConnectBtn = ({
         className={cn(
           "h-11 w-11 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden",
           "cursor-pointer transition-transform duration-300",
-          "focus:outline-none focus:ring-2 focus:ring-zaanet-purple focus:ring-offset-2"
+          "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         )}
         style={{
           backgroundColor,

@@ -2,6 +2,7 @@
 
 import { ethers } from "ethers";
 import { toast } from "@/hooks/use-toast";
+import { network_Abi, zaanetNetwork_CA } from "./projectData";
 
 // Function to load a contract using ethers.js
 export const loadContract = async ({
@@ -54,8 +55,8 @@ export const loadContract = async ({
     }
 
     const contract = new ethers.Contract(
-      contractAddress,
-      contractABI,
+      zaanetNetwork_CA,
+      network_Abi,
       signerOrProvider
     );
     return contract;

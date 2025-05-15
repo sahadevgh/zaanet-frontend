@@ -15,9 +15,9 @@ const mockNetworks: (WifiNetwork & { active: boolean; earnings: string; sessions
   {
     id: "1",
     name: "Zaa Home WiFi",
-    location: { city: "Tamale", area: "Ghana", lat: 9.4071, lng: -0.8539 },
+    location: { country: "Ghana", city: "Tamale", area: "Ghana", lat: 9.4071, lng: -0.8539 },
     speed: 25,
-    price: "1.00",
+    price: 1.00,
     hostWallet: "0xA1FA...456C",
     password: "securepass123",
     description: "Reliable home WiFi network",
@@ -30,9 +30,9 @@ const mockNetworks: (WifiNetwork & { active: boolean; earnings: string; sessions
   {
     id: "2",
     name: "Office Hotspot",
-    location: { city: "Accra", area: "Ghana", lat: 5.6037, lng: -0.1870 },
+    location: { country: "Ghana", city: "Accra", area: "Ghana", lat: 5.6037, lng: -0.1870 },
     speed: 50,
-    price: "1.50",
+    price: 1.50,
     hostWallet: "0xA1FA...456C",
     password: "office2024",
     description: "High-speed office hotspot",
@@ -69,7 +69,7 @@ export default function HostDashboard() {
 
   const handleEditPrice = (id: string, price: string) => {
     setNetworks(networks.map(network => 
-      network.id === id ? { ...network, price } : network
+      network.id === id ? { ...network, price: Number(price) } : network
     ));
     setEditingNetwork(null);
     toast.success("Price updated successfully");

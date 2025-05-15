@@ -1,11 +1,16 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
-import { loadContract } from "@/app/components/web3/contants/web3Funcs";
-
 import { toast } from "@/hooks/use-toast";
 import { initSmartAccountClient } from "./accountAbstraction";
-import { contract_Abi, contractAddress } from "./contants/projectData";
+import {
+  network_Abi,
+  zaanetNetwork_CA,
+  ZERODEV_RPC,
+} from "./contants/projectData";
+import { getContract, http } from "viem";
+import { createPublicClient } from "viem";
+import { arbitrumSepolia } from "viem/chains";
 
 type UserType = "guest" | "host" | "admin";
 
@@ -32,16 +37,35 @@ export const SmartAccountProvider = ({ children }: { children: ReactNode }) => {
       setAddress(addr);
       setIsConnected(true);
 
-      const contract = await loadContract({
-        contractAddress: contractAddress,
-        contractABI: contract_Abi,
+      // Prepare viem clients
+      const publicClient = createPublicClient({
+        chain: arbitrumSepolia,
+        transport: http(ZERODEV_RPC),
       });
 
-      const isHost = await contract?.isHost(addr);
-      const admin = await contract?.admin();
+      // Smart account client for write
+      const networkContract = getContract({
+        address: zaanetNetwork_CA as `0x${string}`,
+        abi: network_Abi,
+        client, // smart account client
+      });
+
+      // Public client for read-only
+      const adminContract = getContract({
+        address: zaanetNetwork_CA as `0x${string}`,
+        abi: network_Abi,
+        client: publicClient,
+      });
+
+      // Check roles
+      const admin = await adminContract.read.owner();
+      const isHost = await networkContract.read.isRegisteredHost([addr]);
+
+      // Ensure admin is a string before using toLowerCase
+      const adminAddress = typeof admin === "string" ? admin : String(admin);
 
       const role: UserType =
-        addr.toLowerCase() === admin.toLowerCase()
+        addr.toLowerCase() === adminAddress.toLowerCase()
           ? "admin"
           : isHost
           ? "host"

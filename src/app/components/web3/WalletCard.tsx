@@ -39,6 +39,8 @@ const WalletCard = ({
     toast.success('Address copied to clipboard');
   };
 
+  console.log(balance)
+
   return (
     <Card className="w-full bg-zaanet-purple-dark border-gray-700 rounded-xl shadow-lg h-full">
       <CardHeader className="pb-4">

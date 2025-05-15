@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createPublicClient, http, formatEther, type Address } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import { readContract } from "viem/actions";
-import { tokenContractAddress } from "@/app/components/web3/contants/projectData";
+import { usdt_CA } from "@/app/components/web3/contants/projectData";
 import { usdtAbi } from "@/app/components/web3/contants/projectData";
 
 // Chain configuration
@@ -27,7 +27,7 @@ export function useWalletBalance(address: Address | null) {
       try {
         const result = await readContract(publicClient, {
           abi: usdtAbi,
-          address: tokenContractAddress,
+          address: usdt_CA,
           functionName: "balanceOf",
           args: [address],
         });

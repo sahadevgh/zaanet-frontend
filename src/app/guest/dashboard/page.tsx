@@ -7,7 +7,7 @@ import { Address } from 'viem';
 
 function page() {
     const { isConnected, userType, address, connect, disconnect } = useSmartAccount();
-    const {balance, isLoading: isLoadingBalance} = useWalletBalance<Address>(address)
+    const {balance, isLoading: isLoadingBalance} = useWalletBalance(address as Address | null)
 
   return (
     <div>

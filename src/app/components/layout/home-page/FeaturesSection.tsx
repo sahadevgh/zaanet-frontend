@@ -29,23 +29,23 @@ const features = [
 
 const FeaturesSection = () => {
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold font-heading mb-4">How ZaaNet Works</h2>
-          <p className="text-gray-600 max-w-xl mx-auto">Share your WiFi. Earn crypto. Help your community get connected.</p>
+          <h2 className="text-3xl md:text-4xl text-blue-100 font-bold font-heading mb-4">How ZaaNet Works</h2>
+          <p className="text-blue-200 max-w-xl mx-auto">Share your WiFi. Earn crypto. Help your community get connected.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, idx) => (
             <div
               key={idx}
-              className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+              className="bg-blue-900 p-6 rounded-lg shadow-sm border border-blue-100 hover:shadow-md transition-shadow"
             >
               <div className={`w-14 h-14 ${feature.bg} rounded-full flex items-center justify-center mb-6`}>
                 {feature.icon}
               </div>
-              <h3 className="font-heading font-semibold text-lg mb-3">{feature.title}</h3>
-              <p className="text-gray-600">{feature.description}</p>
+              <h3 className="font-heading font-semibold text-lg text-blue-100 mb-3">{feature.title}</h3>
+              <p className="text-white">{feature.description}</p>
             </div>
           ))}
         </div>
