@@ -9,6 +9,7 @@ export type WifiNetwork = {
   ratingCount: number;
   successfullSessions: number;
   totalRating: number;
+  status: string;
   ssid: string;
   name: string;
   location: {

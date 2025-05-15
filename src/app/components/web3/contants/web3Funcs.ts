@@ -4,6 +4,13 @@ import { ethers } from "ethers";
 import { toast } from "@/hooks/use-toast";
 import { network_Abi, zaanetNetwork_CA } from "./projectData";
 
+// Extend the Window interface to include ethereum
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
+
 // Function to load a contract using ethers.js
 export const loadContract = async ({
   contractAddress,

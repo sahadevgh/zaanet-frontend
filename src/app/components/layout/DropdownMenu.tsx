@@ -70,7 +70,7 @@ export default function DropdownMenu({
           exit="exit"
           className="absolute right-0 mt-2 w-56 rounded-lg shadow-xl z-50 top-12 
             border border-gray-200 dark:border-gray-700 overflow-hidden 
-            bg-gradient-to-br from-zaanet-purple-dark to-purple-900 backdrop-blur-sm"
+            bg-gradient-to-br from-blue-900 to-black backdrop-blur-sm"
           role="menu"
           aria-orientation="vertical"
           aria-labelledby="menu-button"
@@ -89,7 +89,7 @@ export default function DropdownMenu({
                 onClick={() => handleNavigation(`/${userType}/dashboard`)}
               >
                 <div className="flex items-center gap-3">
-                  <LayoutDashboard className="w-4 h-4" />
+                  <LayoutDashboard className="w-4 h-4 text-blue-400" />
                   Dashboard
                 </div>
                 <ChevronRight className="w-4 h-4 opacity-70" />
@@ -112,7 +112,7 @@ export default function DropdownMenu({
                 }}
               >
                 <div className="flex items-center gap-3">
-                  <RefreshCw className="w-4 h-4" />
+                  <RefreshCw className="w-4 h-4 text-blue-400" />
                   Switch Account
                 </div>
                 <ChevronRight className="w-4 h-4 opacity-70" />
@@ -133,7 +133,7 @@ export default function DropdownMenu({
                   onClick={() => handleNavigation('/anopro-apply')}
                 >
                   <div className="flex items-center gap-3">
-                    <UserPlus className="w-4 h-4" />
+                    <UserPlus className="w-4 h-4 text-blue-400" />
                     Become a Host
                   </div>
                   <ChevronRight className="w-4 h-4 opacity-70" />
@@ -157,7 +157,7 @@ export default function DropdownMenu({
                 }}
               >
                 <div className="flex items-center gap-3">
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-4 h-4 text-blue-400" />
                   Disconnect
                 </div>
                 <ChevronRight className="w-4 h-4 opacity-70" />

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ProvidersConfig from "./ProvidersConfig";
+import { headers } from "next/headers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,12 +24,13 @@ export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
+
 }>) {
-  // const cookie = (await headers()).get("cookie") || null; // Handle null case
+  const cookie = (await headers()).get("cookie") || null; // Handle null case
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ProvidersConfig cookie={null}>{children}</ProvidersConfig>
+        <ProvidersConfig cookie={cookie}>{children}</ProvidersConfig>
       </body>
     </html>
   );

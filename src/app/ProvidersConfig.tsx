@@ -9,22 +9,26 @@ import { SmartAccountProvider } from "./components/web3/SmartAccountProvider";
 
 interface ProvidersConfigProps {
   children: React.ReactNode;
+  cookie?: string | null; 
 }
 
-function ProvidersConfig({ children }: ProvidersConfigProps) {
+function ProvidersConfig({ children, cookie }: ProvidersConfigProps) {
   const queryClient = new QueryClient();
+
+  // If you need to use `cookie`, you can access it here
 
   return (
     <SmartAccountProvider>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        {children}
-      </TooltipProvider>
-    </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          {children}
+        </TooltipProvider>
+      </QueryClientProvider>
     </SmartAccountProvider>
   );
 }
+
 
 export default ProvidersConfig;

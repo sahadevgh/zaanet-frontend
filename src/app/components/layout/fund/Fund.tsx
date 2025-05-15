@@ -95,9 +95,9 @@ const Fund = () => {
   return (
     <div className="container py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       <Button
-        variant="ghost"
+        variant="default"
         onClick={() => router.push(`/${userType}/dashboard`)}
-        className="mb-6 bg-zaanet-purple text-white hover:bg-gray-700"
+        className="mb-6"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back to Dashboard
@@ -111,16 +111,16 @@ const Fund = () => {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <h1 className="text-3xl md:text-4xl font-bold text-zaanet-purple-dark mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-blue-100 mb-2">
             Fund Your Wallet{" "}
           </h1>
-          <p className="text-gray-700">
+          <p className="text-blue-200">
             Add USDT to your Arbitrum wallet using any method below{" "}
           </p>
         </motion.div>
         {/* Main Funding Card */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 h-full">
-          <Card className="bg-zaanet-purple-dark border-gray-700 rounded-xl shadow-lg mb-8 col-span-2 h-full">
+          <Card className="bg-blue-900 border-blue-100/25 rounded-xl shadow-lg mb-8 col-span-2 h-full">
             <CardHeader>
               <CardTitle className="text-xl text-white">Deposit USDT</CardTitle>
               <CardDescription className="text-gray-300">
@@ -131,24 +131,22 @@ const Fund = () => {
               {/* Address Display */}
               <div className="space-y-2">
                 <div className="text-sm text-gray-300">Your wallet address</div>
-                <div className="flex items-center justify-between bg-gray-700/50 rounded-lg p-3">
-                  <div className="font-mono text-white truncate">
+                <div className="flex items-center justify-between bg-black/50 rounded-lg p-3">
+                  <div className="font-mono text-blue-100 truncate">
                     {address || "No wallet address found"}
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      variant="default"
+                      size="default"
                       onClick={() => setShowQrCode(!showQrCode)}
-                      className="text-gray-300 hover:text-white h-9 w-9"
                     >
                       <QrCode className="h-4 w-4" />
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      variant="default"
+                      size="default"
                       onClick={copyAddress}
-                      className="text-gray-300 hover:text-white h-9 w-9"
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -158,11 +156,11 @@ const Fund = () => {
 
               {/* QR Code Section */}
               {showQrCode && address && (
-                <div className="flex flex-col items-center p-4 bg-gray-700/30 rounded-lg">
+                <div className="flex flex-col items-center p-4 bg-black/50 rounded-lg">
                   <div className="mb-4 p-2 bg-white rounded">
                     <QRCode value={address} size={160} level="H" />
                   </div>
-                  <p className="text-sm text-gray-300 text-center">
+                  <p className="text-sm text-blue-200 text-center">
                     Scan this QR code to send USDT to your wallet
                   </p>
                 </div>
@@ -189,15 +187,17 @@ const Fund = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Button
                   onClick={openTransak}
-                  disabled={!isTransakLoaded || !address || isTransakOpen}
-                  className="bg-zaanet-green hover:bg-zaanet-purple text-white h-12"
+                  // disabled={!isTransakLoaded || !address || isTransakOpen}
+                  className="bg-green-600 hover:bg-green-700 text-white h-12 font-bold"
                 >
-                  {isTransakLoaded ? "Buy with Card/Bank" : "Loading..."}
+                  {/* {isTransakLoaded ? "Buy with Card/Bank" : "Loading..."} */}
+                    Buy with MoMo/Card
+
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => router.push(`/${userType}/dashboard`)}
-                  className="border-gray-600 text-white hover:bg-gray-700 h-12"
+                  className="h-12 font-bold"
                 >
                   Back to Dashboard
                 </Button>
@@ -206,14 +206,14 @@ const Fund = () => {
           </Card>
           {/* Info Cards */}
           <div className="grid grid-cols-1 gap-4 h-full">
-            <Card className="bg-zaanet-purple-dark border-gray-700 rounded-xl">
+            <Card className="bg-blue-900 border-blue-100/25 rounded-xl">
               <CardHeader>
-                <CardTitle className="text-lg text-white">
+                <CardTitle className="text-lg text-blue-100">
                   What is USDT?
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-200">
+                <p className="text-blue-200">
                   USDT (Tether) is a stablecoin pegged to the US dollar. It's
                   the primary currency used for transactions on the Arbitrum
                   network.
@@ -221,24 +221,24 @@ const Fund = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-zaanet-purple-dark border-gray-700 rounded-xl">
+            <Card className="bg-blue-900 border-blue-100/25 rounded-xl">
               <CardHeader>
                 <CardTitle className="text-lg text-white">
                   Funding Options
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="text-gray-200 space-y-2 text-sm">
+                <ul className="text-blue-200 space-y-2 text-sm">
                   <li className="flex items-start gap-2">
-                    <span className="text-purple-400">•</span>
+                    <span className="text-blue-100">•</span>
                     <span>Buy directly with credit/debit card</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-purple-400">•</span>
+                    <span className="text-blue-100">•</span>
                     <span>Send from another wallet (QR or address)</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-purple-400">•</span>
+                    <span className="text-blue-100">•</span>
                     <span>Receive from exchanges like Binance or Coinbase</span>
                   </li>
                 </ul>

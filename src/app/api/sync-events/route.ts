@@ -1,3 +1,4 @@
+import { zaanetNetwork_CA } from '@/app/components/web3/contants/projectData';
 import { connectToDatabase } from '@/app/server/db/mongoDB';
 import MetadataModel from '@/app/server/models/Metadata.model';
 import sessionModel from '@/app/server/models/Session.model';
@@ -7,7 +8,7 @@ import { NextResponse } from 'next/server';
 
 const provider = new ethers.JsonRpcProvider(process.env.ARBITRUM_RPC_URL);
 const contract = new ethers.Contract(
-  process.env.CONTRACT_ADDRESS!,
+  zaanetNetwork_CA,
   [
     'event SessionStarted(uint256 sessionId, uint256 networkId, address guest, uint256 duration, uint256 amount)'
   ],

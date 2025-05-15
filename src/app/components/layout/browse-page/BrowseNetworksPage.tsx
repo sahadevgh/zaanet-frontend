@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import type { WifiNetwork } from "@/types";
 import WifiNetworkCard from "@/app/components/wifi/WifiNetworkCard";
 import { Button } from "@/app/components/ui/button";

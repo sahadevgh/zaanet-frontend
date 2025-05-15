@@ -1,17 +1,16 @@
-import { connectToDatabase } from '../../../../server/db/mongoDB';
+import { connectToDatabase } from '@/app/server/db/mongoDB';
 import SessionModel from '@/app/server/models/Session.model';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { networkId: string; address: string } }
+  request: NextRequest,
+  { params }: any
 ) {
   const { networkId, address } = params;
 
   try {
     await connectToDatabase();
 
-    // Normalize address and find an active session
     const session = await SessionModel.findOne({
       networkId,
       guest: address.toLowerCase(),
