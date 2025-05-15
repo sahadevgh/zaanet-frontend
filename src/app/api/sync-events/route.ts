@@ -6,7 +6,7 @@ import { ethers } from 'ethers';
 import jwt from 'jsonwebtoken';
 import { NextResponse } from 'next/server';
 
-const provider = new ethers.JsonRpcProvider(process.env.ARBITRUM_RPC_URL);
+const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_ARBITRUM_RPC_URL);
 const contract = new ethers.Contract(
   zaanetNetwork_CA,
   [
