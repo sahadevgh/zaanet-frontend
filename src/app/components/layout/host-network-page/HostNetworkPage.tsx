@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
- import { useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { Form } from "../../ui/form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,11 +19,27 @@ import { toast } from "@/hooks/use-toast";
 import { HostForm } from "@/types";
 import { Button } from "../../ui/button";
 import { Alert, AlertTitle, AlertDescription } from "../../ui/alert";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "../../ui/form";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+  FormDescription,
+} from "../../ui/form";
 import { Input } from "../../ui/input";
 import { Textarea } from "../../ui/textarea";
-
-
+import { initSmartAccountClient } from "../../web3/accountAbstraction";
+import {
+  createPublicClient,
+  encodeFunctionData,
+  http,
+} from "viem";
+import { uploadImageToIPFS, uploadToIPFS } from "../../web3/contants/web3Funcs";
+import { network_Abi, zaanetNetwork_CA } from "../../web3/contants/projectData";
+import { ethers } from "ethers";
+import { arbitrumSepolia } from "viem/chains";
+import { useSmartAccount } from "../../web3/SmartAccountProvider";
 
 // Zod schema
 const hostSchema = z.object({
@@ -44,9 +60,19 @@ const hostSchema = z.object({
     .optional(),
 });
 
+// Chain configuration
+const chain = arbitrumSepolia;
+
+// Public client for chain queries
+export const publicClient = createPublicClient({
+  chain,
+  transport: http(),
+});
+
 export default function HostNetworkPage() {
-  // Mock values to make the component render without errors
-  const isConnected = true;
+  const { isConnected } =
+    useSmartAccount();
+
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -63,23 +89,140 @@ export default function HostNetworkPage() {
       description: "",
       image: undefined,
     },
-  })
+  });
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  async function onSubmit(data: HostForm) {
-    setIsLoading(true);
-    // Mock implementation
-    setTimeout(() => {
-      setIsLoading(false);
-      setSubmitted(true);
+  // Function to handle network registration
+  async function handleHostNetwork(
+    data: HostForm,
+    onComplete: (success: boolean) => void
+  ) {
+    try {
+      if (!isConnected) {
+        toast({
+          title: "Error",
+          description: "Smart account is not connected.",
+          variant: "destructive",
+        });
+        onComplete(false);
+        return;
+      }
+
+      // Upload image to IPFS if provided
+      let imageCID = "";
+      if (data.image) {
+        imageCID = await uploadImageToIPFS(data.image);
+      }
+
+      // Validate location fields
+      const { location } = data;
+      if (
+        !location.city ||
+        !location.country ||
+        !location.area ||
+        !location.lat ||
+        !location.lng
+      ) {
+        toast({
+          title: "Error",
+          description: "Please select a valid location on the map.",
+          variant: "destructive",
+        });
+        onComplete(false);
+        return;
+      }
+
+      const priceString = Number(data.price).toFixed(18);
+      const amountToSend = ethers.parseUnits(priceString, 18);
+
+      const metadata = {
+        ssid: data.ssid,
+        location: {
+          country: location.country,
+          city: location.city,
+          area: location.area,
+          lat: location.lat,
+          lng: location.lng,
+        },
+        speed: data.speed,
+        description: data.description || "",
+        image: imageCID,
+        createdAt: new Date().toISOString(),
+      };
+
+      const metadataCID = await uploadToIPFS(JSON.stringify(metadata));
+
+      const kernelClient = await initSmartAccountClient();
+
+      const userOpHash = await kernelClient.sendUserOperation({
+        callData: await kernelClient.account.encodeCalls([
+          {
+            to: zaanetNetwork_CA,
+            value: BigInt(0),
+            data: encodeFunctionData({
+              abi: network_Abi,
+              functionName: "registerNetwork",
+              args: [amountToSend, metadataCID, true],
+            }),
+          },
+        ]),
+        preVerificationGas: 56135n,
+        maxFeePerGas: 1358892000n,
+        maxPriorityFeePerGas: 1000000000n,
+        callGasLimit: 1000000n,
+      });
+
+      const receipt = await kernelClient.waitForUserOperationReceipt({
+        hash: userOpHash,
+      });
+
+      if (!receipt) {
+        toast({
+          title: "Error",
+          description: "Transaction failed. Please try again.",
+          variant: "destructive",
+        });
+        onComplete(false);
+        return;
+      }
+
       toast({
         title: "Network Listed!",
         description: "Your WiFi network is now hosted and available to users.",
       });
-    }, 1500);
+
+      onComplete(true);
+    } catch (error: unknown) {
+      console.error("Transaction error:", error);
+      let errorMessage = "Failed to list your network. Please try again.";
+      if (error instanceof Error) {
+        if (error.message.includes("Invalid IPFS CID")) {
+          errorMessage = "Failed to upload metadata to IPFS.";
+        } else if (error.message.includes("simulateValidation")) {
+          errorMessage =
+            "Operation rejected during simulation. Check gas settings or network validity.";
+        }
+      }
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      onComplete(false);
+    }
+  }
+
+  async function onSubmit(data: HostForm) {
+    setIsLoading(true);
+    await handleHostNetwork(data, (success) => {
+      setIsLoading(false);
+      if (success) {
+        setSubmitted(true);
+      }
+    });
   }
 
   // Add inside your component
@@ -104,11 +247,11 @@ export default function HostNetworkPage() {
   function renderSummary(data: HostForm) {
     if (!data) return null;
     return (
-      <div className="mt-8 rounded-2xl px-6 py-8 shadow-lg animate-fade-in border border-blue-100">
+      <div className="mt-8 rounded-2xl px-6 py-8 shadow-lg animate-fade-in border border-blue-500/25">
         <h2 className="text-2xl font-bold text-blue-100 flex items-center gap-2 mb-2">
           <Wifi className="text-blue-100" /> Your Hosted Network
         </h2>
-        <div className="mb-4 text-gray-600">
+        <div className="mb-4 text-blue-200">
           <span className="font-semibold">{data.ssid}</span> in{" "}
           <span className="text-blue-100">
             {data.location.city}, {data.location.area}
@@ -116,24 +259,24 @@ export default function HostNetworkPage() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 my-4 text-sm">
           <div className="flex items-center gap-2">
-            <DollarSign className="text-blue-100" size={18} />
-            <span>
-              <span className="font-bold">{data.price}</span> USDT/day
+            <span className="text-blue-200">
+              <span className="font-bold text-blue-100">{data.price}</span>{" "}
+              USDT/day
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-blue-200">
             <MapPin className="text-blue-100" size={18} />
             <span>
               {data.location.city}, {data.location.area}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-blue-200">
             <Wifi className="text-blue-100" size={18} />
             <span>{data.speed} Mbps</span>
           </div>
         </div>
         {data.description && (
-          <div className="text-gray-500 mt-2">
+          <div className="text-blue-300 mt-2">
             <Info size={18} className="inline mr-1" />
             {data.description}
           </div>
@@ -149,21 +292,22 @@ export default function HostNetworkPage() {
   if (submitted) {
     return (
       <div className="container max-w-2xl py-12 px-4 mx-auto">
-        <div className="bg-blue-900 rounded-2xl p-8 shadow-lg">
-          <div className="bg-blue-900/10 rounded-full p-6 mb-4 animate-scale-in">
+        <div className="bg-blue-900 rounded-2xl p-8 shadow-lg flex flex-col items-center border border-blue-500/25">
+          <div className="bg-blue-600 rounded-full p-6 mb-4 animate-scale-in">
             <Wifi size={48} className="text-blue-100" />
           </div>
           <h1 className="text-3xl font-bold text-blue-100 mb-3">
             Network Successfully Hosted!
           </h1>
-          <p className="text-gray-700 mb-6 text-center">
+          <p className="text-blue-200 mb-6 text-center">
             Congratulations! Your network is now discoverable by nearby users
             and you&apos;ll start earning for every connection. You can manage
             or update your network from your dashboard.
           </p>
           {renderSummary(form.getValues())}
           <Button
-            className="mt-8 bg-blue-900 hover:bg-blue-900-dark text-white"
+            variant="default"
+            className="mt-8"
             onClick={() => setSubmitted(false)}
           >
             Host Another Network
@@ -192,15 +336,15 @@ export default function HostNetworkPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {!isConnected && (
-                <Alert variant="destructive">
+                <Alert variant="destructive" className="bg-yellow-500/50">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Account Required</AlertTitle>
                   <AlertDescription>
-                    You must connect a your account to become a provider.
+                    You must connect your account to become a host.
                   </AlertDescription>
                 </Alert>
               )}
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* First column */}
                 <div className="space-y-6">
@@ -215,13 +359,17 @@ export default function HostNetworkPage() {
                           Network Name
                         </FormLabel>
                         <FormControl>
-                          <Input className="bg-blue-100" placeholder="E.g. ZaaNet Home" {...field} />
+                          <Input
+                            className="bg-blue-100"
+                            placeholder="E.g. ZaaNet Home"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     disabled={!isConnected}
@@ -233,7 +381,8 @@ export default function HostNetworkPage() {
                           WiFi Speed (Mbps)
                         </FormLabel>
                         <FormControl>
-                          <Input className="bg-blue-100"
+                          <Input
+                            className="bg-blue-100"
                             type="number"
                             min={1}
                             step={1}
@@ -246,7 +395,7 @@ export default function HostNetworkPage() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="price"
@@ -258,7 +407,8 @@ export default function HostNetworkPage() {
                           Price (USDT/day)
                         </FormLabel>
                         <FormControl>
-                          <Input className="bg-blue-100"
+                          <Input
+                            className="bg-blue-100"
                             type="number"
                             min={0.002}
                             step={0.002}
@@ -272,14 +422,14 @@ export default function HostNetworkPage() {
                     )}
                   />
                 </div>
-                
+
                 {/* Second column */}
                 <div className="space-y-6">
                   <div>
                     <label className="text-sm font-medium flex items-center text-blue-100">
                       <MapPin className="mr-1 text-blue-100" /> Location
                     </label>
-                    
+
                     <Button
                       type="button"
                       variant="outline"
@@ -289,10 +439,12 @@ export default function HostNetworkPage() {
                     >
                       📍 Use My Current Location
                     </Button>
-                    
-                    {geoError && <p className="text-xs text-red-500 mt-1">{geoError}</p>}
+
+                    {geoError && (
+                      <p className="text-xs text-red-500 mt-1">{geoError}</p>
+                    )}
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-3">
                     <FormField
                       control={form.control}
@@ -300,9 +452,12 @@ export default function HostNetworkPage() {
                       disabled={!isConnected}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-blue-100">Latitude</FormLabel>
+                          <FormLabel className="text-blue-100">
+                            Latitude
+                          </FormLabel>
                           <FormControl>
-                            <Input className="bg-blue-100"
+                            <Input
+                              className="bg-blue-100"
                               type="number"
                               step="any"
                               placeholder="e.g. 5.6037"
@@ -319,9 +474,12 @@ export default function HostNetworkPage() {
                       disabled={!isConnected}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-blue-100">Longitude</FormLabel>
+                          <FormLabel className="text-blue-100">
+                            Longitude
+                          </FormLabel>
                           <FormControl>
-                            <Input className="bg-blue-100"
+                            <Input
+                              className="bg-blue-100"
                               type="number"
                               step="any"
                               placeholder="e.g. -0.187"
@@ -333,7 +491,7 @@ export default function HostNetworkPage() {
                       )}
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-3 gap-3">
                     <FormField
                       control={form.control}
@@ -341,9 +499,15 @@ export default function HostNetworkPage() {
                       disabled={!isConnected}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-blue-100">Country</FormLabel>
+                          <FormLabel className="text-blue-100">
+                            Country
+                          </FormLabel>
                           <FormControl>
-                            <Input className="bg-blue-100" placeholder="Ghana" {...field} />
+                            <Input
+                              className="bg-blue-100"
+                              placeholder="Ghana"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -357,8 +521,11 @@ export default function HostNetworkPage() {
                         <FormItem>
                           <FormLabel className="text-blue-100">City</FormLabel>
                           <FormControl>
-                            <Input className="bg-blue-100" 
-                            placeholder="Accra" {...field} />
+                            <Input
+                              className="bg-blue-100"
+                              placeholder="Accra"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -372,7 +539,11 @@ export default function HostNetworkPage() {
                         <FormItem>
                           <FormLabel className="text-blue-100">Area</FormLabel>
                           <FormControl>
-                            <Input className="bg-blue-100" placeholder="Osu" {...field} />
+                            <Input
+                              className="bg-blue-100"
+                              placeholder="Osu"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -380,7 +551,7 @@ export default function HostNetworkPage() {
                     />
                   </div>
                 </div>
-                
+
                 {/* Third column */}
                 <div className="space-y-6">
                   <FormField
@@ -406,7 +577,7 @@ export default function HostNetworkPage() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="image"
@@ -418,7 +589,8 @@ export default function HostNetworkPage() {
                           Add a Photo
                         </FormLabel>
                         <FormControl>
-                          <Input className="bg-blue-100"
+                          <Input
+                            className="bg-blue-100"
                             type="file"
                             accept="image/*"
                             onChange={(e) => onChange(e.target.files?.[0])}

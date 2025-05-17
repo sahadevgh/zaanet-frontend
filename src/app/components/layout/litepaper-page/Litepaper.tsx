@@ -95,52 +95,89 @@ export default function Litepaper() {
             )}
             {!isLoading && !isError && data && (
               <article className="prose max-w-none prose-zinc dark:prose-invert prose-headings:font-heading prose-h1:mt-8 prose-h2:mt-6 prose-h3:mt-4 prose-h1:text-3xl prose-h2:text-2xl prose-a:text-blue-300 font-sans text-blue-100">
-             <ReactMarkdown
-  remarkPlugins={[remarkGfm]}
-  rehypePlugins={[rehypeRaw, rehypeSanitize]}
-  components={{
-    h1: ({ ...props }) => (
-      <h1 {...props} className="mt-10 mb-4 text-3xl font-bold text-blue-200" />
-    ),
-    h2: ({ ...props }) => (
-      <h2 {...props} className="mt-8 mb-3 text-2xl font-semibold text-blue-200" />
-    ),
-    h3: ({ ...props }) => (
-      <h3 {...props} className="mt-6 mb-2 text-xl font-semibold text-blue-100" />
-    ),
-    p: ({ ...props }) => (
-      <p {...props} className="mb-4 leading-relaxed text-blue-100" />
-    ),
-    li: ({ ...props }) => (
-      <li {...props} className="mb-2 ml-4 list-disc text-blue-100" />
-    ),
-    a: ({ ...props }) => (
-      <a {...props} className="text-blue-300 underline hover:text-blue-400" />
-    ),
-    code: ({ inline, className, children, ...props }: { inline?: boolean; className?: string; children?: React.ReactNode }) => {
-      return !inline ? (
-        <pre className="bg-blue-900 text-sm text-blue-100 p-4 rounded-md overflow-x-auto mb-4">
-          <code {...props} className={className}>{children}</code>
-        </pre>
-      ) : (
-        <code className="bg-gray-200 text-sm px-1 rounded">{children}</code>
-      );
-    },
-    table: ({ children }) => (
-      <div className="overflow-x-auto my-4">
-        <table className="w-full border border-gray-200">{children}</table>
-      </div>
-    ),
-    th: ({ children }) => (
-      <th className="border px-4 py-2 bg-blue-900 text-left text-white">{children}</th>
-    ),
-    td: ({ children }) => (
-      <td className="border px-4 py-2 text-blue-100">{children}</td>
-    ),
-  }}
->
-  {filteredContent || "No matching content found."}
-</ReactMarkdown>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                  components={{
+                    h1: ({ ...props }) => (
+                      <h1
+                        {...props}
+                        className="mt-10 mb-4 text-3xl font-bold text-blue-200"
+                      />
+                    ),
+                    h2: ({ ...props }) => (
+                      <h2
+                        {...props}
+                        className="mt-8 mb-3 text-2xl font-semibold text-blue-200"
+                      />
+                    ),
+                    h3: ({ ...props }) => (
+                      <h3
+                        {...props}
+                        className="mt-6 mb-2 text-xl font-semibold text-blue-100"
+                      />
+                    ),
+                    p: ({ ...props }) => (
+                      <p
+                        {...props}
+                        className="mb-4 leading-relaxed text-blue-100"
+                      />
+                    ),
+                    li: ({ ...props }) => (
+                      <li
+                        {...props}
+                        className="mb-2 ml-4 list-disc text-blue-100"
+                      />
+                    ),
+                    a: ({ ...props }) => (
+                      <a
+                        {...props}
+                        className="text-blue-300 underline hover:text-blue-400"
+                      />
+                    ),
+                    code: ({
+                      inline,
+                      className,
+                      children,
+                      ...props
+                    }: {
+                      inline?: boolean;
+                      className?: string;
+                      children?: React.ReactNode;
+                    }) => {
+                      return !inline ? (
+                        <pre className="bg-blue-900 text-sm text-blue-100 p-4 rounded-md overflow-x-auto mb-4">
+                          <code {...props} className={className}>
+                            {children}
+                          </code>
+                        </pre>
+                      ) : (
+                        <code className="bg-gray-200 text-sm px-1 rounded">
+                          {children}
+                        </code>
+                      );
+                    },
+                    table: ({ children }) => (
+                      <div className="overflow-x-auto my-4">
+                        <table className="w-full border border-gray-200">
+                          {children}
+                        </table>
+                      </div>
+                    ),
+                    th: ({ children }) => (
+                      <th className="border px-4 py-2 bg-blue-900 text-left text-white">
+                        {children}
+                      </th>
+                    ),
+                    td: ({ children }) => (
+                      <td className="border px-4 py-2 text-blue-100">
+                        {children}
+                      </td>
+                    ),
+                  }}
+                >
+                  {filteredContent || "No matching content found."}
+                </ReactMarkdown>
 
                 {filteredContent?.trim() === "" && (
                   <p className="text-center text-muted-foreground">
