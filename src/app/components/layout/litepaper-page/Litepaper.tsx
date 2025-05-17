@@ -55,7 +55,7 @@ export default function Litepaper() {
         />
       </Head>
       <div className="mx-auto max-w-6xl py-12 px-4 sm:px-6">
-        <Card className="border-none bg-blue-800">
+        <Card className="border-none bg-blue-900">
           <CardContent className="p-6">
             <h1 className="text-3xl sm:text-4xl font-bold mb-8 font-heading text-center text-gradient bg-gradient-to-r from-blue-200 to-blue-100 bg-clip-text text-transparent">
               📄 ZaaNet Litepaper
