@@ -37,7 +37,7 @@ export default function Litepaper() {
           line.toLowerCase().includes(searchTerm.toLowerCase())
             ? line.replace(
                 new RegExp(`(${searchTerm})`, "gi"),
-                `<mark class="bg-zaanet-purple/20 text-zaanet-purple">$1</mark>`
+                `<mark class="bg-blue-900/20 text-blue-100">$1</mark>`
               )
             : null
         )
@@ -46,7 +46,7 @@ export default function Litepaper() {
     : data;
 
   return (
-    <>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-black to-blue-900">
       <Head>
         <title>ZaaNet Litepaper</title>
         <meta
@@ -55,19 +55,19 @@ export default function Litepaper() {
         />
       </Head>
       <div className="mx-auto max-w-6xl py-12 px-4 sm:px-6">
-        <Card>
-          <CardContent className="p-6 bg-gradient-to-br from-white to-zaanet-purple-light">
-            <h1 className="text-3xl sm:text-4xl font-bold mb-8 font-heading text-center text-gradient bg-gradient-to-r from-zaanet-purple to-zaanet-purple-dark bg-clip-text text-transparent">
+        <Card className="border-none bg-blue-800">
+          <CardContent className="p-6">
+            <h1 className="text-3xl sm:text-4xl font-bold mb-8 font-heading text-center text-gradient bg-gradient-to-r from-blue-200 to-blue-100 bg-clip-text text-transparent">
               📄 ZaaNet Litepaper
             </h1>
             <div className="mb-8 flex items-center gap-2 max-w-md mx-auto">
-              <Search className="text-zaanet-purple" size={20} />
+              <Search className="text-blue-100" size={20} />
               <Input
                 type="text"
                 placeholder="Search litepaper content..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zaanet-purple"
+                className="w-full p-3 border border-blue-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
                 aria-label="Search litepaper content"
               />
             </div>
@@ -94,32 +94,32 @@ export default function Litepaper() {
               </div>
             )}
             {!isLoading && !isError && data && (
-              <article className="prose max-w-none prose-zinc dark:prose-invert prose-headings:font-heading prose-h1:mt-8 prose-h2:mt-6 prose-h3:mt-4 prose-h1:text-3xl prose-h2:text-2xl prose-a:text-zaanet-purple font-sans text-gray-900">
+              <article className="prose max-w-none prose-zinc dark:prose-invert prose-headings:font-heading prose-h1:mt-8 prose-h2:mt-6 prose-h3:mt-4 prose-h1:text-3xl prose-h2:text-2xl prose-a:text-blue-300 font-sans text-blue-100">
              <ReactMarkdown
   remarkPlugins={[remarkGfm]}
   rehypePlugins={[rehypeRaw, rehypeSanitize]}
   components={{
     h1: ({ ...props }) => (
-      <h1 {...props} className="mt-10 mb-4 text-3xl font-bold text-zinc-900" />
+      <h1 {...props} className="mt-10 mb-4 text-3xl font-bold text-blue-200" />
     ),
     h2: ({ ...props }) => (
-      <h2 {...props} className="mt-8 mb-3 text-2xl font-semibold text-zinc-800" />
+      <h2 {...props} className="mt-8 mb-3 text-2xl font-semibold text-blue-200" />
     ),
     h3: ({ ...props }) => (
-      <h3 {...props} className="mt-6 mb-2 text-xl font-semibold text-zinc-700" />
+      <h3 {...props} className="mt-6 mb-2 text-xl font-semibold text-blue-100" />
     ),
     p: ({ ...props }) => (
-      <p {...props} className="mb-4 leading-relaxed text-gray-900" />
+      <p {...props} className="mb-4 leading-relaxed text-blue-100" />
     ),
     li: ({ ...props }) => (
-      <li {...props} className="mb-2 ml-4 list-disc" />
+      <li {...props} className="mb-2 ml-4 list-disc text-blue-100" />
     ),
     a: ({ ...props }) => (
-      <a {...props} className="text-zaanet-purple underline hover:text-zaanet-purple-dark" />
+      <a {...props} className="text-blue-300 underline hover:text-blue-400" />
     ),
     code: ({ inline, className, children, ...props }: { inline?: boolean; className?: string; children?: React.ReactNode }) => {
       return !inline ? (
-        <pre className="bg-gray-100 text-sm text-gray-800 p-4 rounded-md overflow-x-auto mb-4">
+        <pre className="bg-blue-900 text-sm text-blue-100 p-4 rounded-md overflow-x-auto mb-4">
           <code {...props} className={className}>{children}</code>
         </pre>
       ) : (
@@ -132,10 +132,10 @@ export default function Litepaper() {
       </div>
     ),
     th: ({ children }) => (
-      <th className="border px-4 py-2 bg-gray-100 text-left">{children}</th>
+      <th className="border px-4 py-2 bg-blue-900 text-left text-white">{children}</th>
     ),
     td: ({ children }) => (
-      <td className="border px-4 py-2">{children}</td>
+      <td className="border px-4 py-2 text-blue-100">{children}</td>
     ),
   }}
 >
@@ -150,10 +150,9 @@ export default function Litepaper() {
               </article>
             )}
             <div className="mt-8 text-center">
-              <Link href="/networks">
+              <Link href="/browse">
                 <Button
                   variant="outline"
-                  className="border-zaanet-purple text-zaanet-purple hover:bg-zaanet-purple hover:text-white"
                   aria-label="Browse available WiFi networks"
                 >
                   Browse WiFi Networks
@@ -163,6 +162,6 @@ export default function Litepaper() {
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   );
 }
