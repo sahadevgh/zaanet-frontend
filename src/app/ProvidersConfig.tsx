@@ -15,10 +15,8 @@ interface ProvidersConfigProps {
 function ProvidersConfig({ children, cookie }: ProvidersConfigProps) {
   const queryClient = new QueryClient();
 
-  // If you need to use `cookie`, you can access it here
-
   return (
-    <SmartAccountProvider>
+    <SmartAccountProvider cookie={cookie ?? null}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { toast } from "@/hooks/use-toast";
 import { initSmartAccountClient } from "./accountAbstraction";
 import {
@@ -24,7 +24,7 @@ interface SmartAccountContextType {
 
 const SmartAccountContext = createContext<SmartAccountContextType | null>(null);
 
-export const SmartAccountProvider = ({ children }: { children: ReactNode }) => {
+export const SmartAccountProvider = ({ children, cookie }: { children: ReactNode, cookie: string | null }) => {
   const [address, setAddress] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [userType, setUserType] = useState<UserType>("guest");
@@ -36,6 +36,7 @@ export const SmartAccountProvider = ({ children }: { children: ReactNode }) => {
 
       setAddress(addr);
       setIsConnected(true);
+      localStorage.setItem("smartAccountConnected", "true"); // store flag
 
       // Prepare viem clients
       const publicClient = createPublicClient({
@@ -64,12 +65,17 @@ export const SmartAccountProvider = ({ children }: { children: ReactNode }) => {
       // Ensure admin is a string before using toLowerCase
       const adminAddress = typeof admin === "string" ? admin : String(admin);
 
-      const role: UserType =
+      let role: UserType =
         addr.toLowerCase() === adminAddress.toLowerCase()
           ? "admin"
           : isHost
           ? "host"
           : "guest";
+
+      // If cookie exists and has a valid role, use it instead
+      if (cookie && ["guest", "host", "admin"].includes(cookie)) {
+        role = cookie as UserType;
+      }
 
       setUserType(role);
 
@@ -93,12 +99,21 @@ export const SmartAccountProvider = ({ children }: { children: ReactNode }) => {
     setAddress(null);
     setIsConnected(false);
     setUserType("guest");
+    localStorage.removeItem("smartAccountConnected"); // clear flag
 
     toast({
       title: "Disconnected",
       description: "Smart account disconnected.",
     });
   };
+
+  // Auto-reconnect on reload if flag exists
+  useEffect(() => {
+    const shouldReconnect = localStorage.getItem("smartAccountConnected");
+    if (shouldReconnect && !isConnected) {
+      connect(); // silent reconnect
+    }
+  }, []);
 
   return (
     <SmartAccountContext.Provider
