@@ -327,10 +327,10 @@ export default function PerformanceCharts({
   // Show network selection message
   if (!globalMode && !networkId) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-black rounded-xl shadow-sm p-6">
         <div className="text-center py-8">
-          <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">Select a network to view performance charts</p>
+          <BarChart3 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-300">Select a network to view performance charts</p>
         </div>
       </div>
     )
@@ -339,7 +339,7 @@ export default function PerformanceCharts({
   // Show loading state
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-black rounded-xl shadow-sm p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-gray-200 rounded w-1/3"></div>
           <div className="h-64 bg-gray-200 rounded"></div>
@@ -351,11 +351,11 @@ export default function PerformanceCharts({
   // Show error state
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-black rounded-xl shadow-sm p-6">
         <div className="text-center py-8">
           <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
           <p className="text-red-600 mb-4">Failed to load performance data</p>
-          <p className="text-sm text-gray-500 mb-4">{error.message}</p>
+          <p className="text-sm text-gray-300 mb-4">{error.message}</p>
           <button
             onClick={() => refetch()}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -371,17 +371,17 @@ export default function PerformanceCharts({
   const insights = getInsights()
 
   return (
-    <div className="bg-white rounded-xl shadow-sm">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-black rounded-xl shadow-sm border border-gray-500/25">
+      <div className="p-6 border-b border-gray-500">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <h3 className="text-lg font-semibold text-gray-900">Performance Charts</h3>
+            <h3 className="text-lg font-semibold text-white">Performance Charts</h3>
             {globalMode ? (
               <Globe className="h-5 w-5 text-blue-500" />
             ) : (
               <Network className="h-5 w-5 text-green-500" />
             )}
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-300">
               {globalMode ? 'Global View' : `Network ${networkId}`}
             </span>
           </div>
@@ -391,7 +391,7 @@ export default function PerformanceCharts({
               className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                 activeChart === 'speed' 
                   ? 'bg-blue-100 text-blue-700' 
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-300 hover:bg-blue-900'
               }`}
             >
               Speed Tests
@@ -401,7 +401,7 @@ export default function PerformanceCharts({
               className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                 activeChart === 'system' 
                   ? 'bg-blue-100 text-blue-700' 
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-300 hover:bg-blue-900'
               }`}
             >
               System Metrics
@@ -412,7 +412,7 @@ export default function PerformanceCharts({
                 className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                   activeChart === 'network' 
                     ? 'bg-blue-100 text-blue-700' 
-                    : 'text-gray-600 hover:bg-gray-100'
+                    : 'text-gray-300 hover:bg-blue-900'
                 }`}
               >
                 Networks
@@ -420,7 +420,7 @@ export default function PerformanceCharts({
             )}
             <button
               onClick={() => refetch()}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 text-gray-300 hover:text-gray-300 hover:bg-blue-900 rounded-lg transition-colors"
               title="Refresh"
             >
               <RefreshCw className="w-4 h-4" />
@@ -429,13 +429,13 @@ export default function PerformanceCharts({
         </div>
         {lastUpdate && (
           <div className="flex items-center justify-between mt-2">
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-300">
               Last updated: {lastUpdate.toLocaleTimeString()} • Timeframe: {performanceData.timeRange}
             </p>
             {isLive && (
               <div className="flex items-center space-x-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-gray-500">Live</span>
+                <span className="text-xs text-gray-300">Live</span>
               </div>
             )}
           </div>
@@ -499,9 +499,9 @@ export default function PerformanceCharts({
         {/* No Data Message */}
         {performanceData.speedData.length === 0 && performanceData.systemMetrics.length === 0 && (
           <div className="text-center py-12">
-            <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 mb-2">No performance data available</p>
-            <p className="text-sm text-gray-400">
+            <BarChart3 className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-300 mb-2">No performance data available</p>
+            <p className="text-sm text-gray-300">
               {globalMode 
                 ? 'Performance data will appear when networks start reporting metrics'
                 : 'Performance data will appear when this network starts reporting metrics'
@@ -629,11 +629,11 @@ export default function PerformanceCharts({
               <>
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
-                  <span className="text-gray-600">Download Speed</span>
+                  <span className="text-gray-300">Download Speed</span>
                 </div>
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-blue-500 rounded mr-2"></div>
-                  <span className="text-gray-600">Upload Speed</span>
+                  <span className="text-gray-300">Upload Speed</span>
                 </div>
               </>
             )}
@@ -641,15 +641,15 @@ export default function PerformanceCharts({
               <>
                 <div className="flex items-center">
                   <Cpu className="w-4 h-4 text-red-500 mr-1" />
-                  <span className="text-gray-600">CPU Usage</span>
+                  <span className="text-gray-300">CPU Usage</span>
                 </div>
                 <div className="flex items-center">
                   <HardDrive className="w-4 h-4 text-blue-500 mr-1" />
-                  <span className="text-gray-600">Memory</span>
+                  <span className="text-gray-300">Memory</span>
                 </div>
                 <div className="flex items-center">
                   <Thermometer className="w-4 h-4 text-yellow-500 mr-1" />
-                  <span className="text-gray-600">Temperature</span>
+                  <span className="text-gray-300">Temperature</span>
                 </div>
               </>
             )}
@@ -657,11 +657,11 @@ export default function PerformanceCharts({
               <>
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
-                  <span className="text-gray-600">Download</span>
+                  <span className="text-gray-300">Download</span>
                 </div>
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-blue-500 rounded mr-2"></div>
-                  <span className="text-gray-600">Upload</span>
+                  <span className="text-gray-300">Upload</span>
                 </div>
               </>
             )}
@@ -669,14 +669,14 @@ export default function PerformanceCharts({
         )}
 
         {detailed && performanceData.speedData.length > 0 && (
-          <div className="pt-4 border-t border-gray-200">
+          <div className="pt-4 border-t border-gray-500">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-sm">
               <div>
-                <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                <h4 className="font-medium text-gray-200 mb-3 flex items-center">
                   <TrendingUp className="w-4 h-4 mr-2 text-green-600" />
                   Performance Insights
                 </h4>
-                <ul className="space-y-2 text-gray-600">
+                <ul className="space-y-2 text-gray-300">
                   {insights.performance.map((insight, index) => (
                     <li key={index} className="flex items-start">
                       <span className="text-blue-500 mr-2">•</span>
@@ -686,11 +686,11 @@ export default function PerformanceCharts({
                 </ul>
               </div>
               <div>
-                <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                <h4 className="font-medium text-gray-200 mb-3 flex items-center">
                   <Cpu className="w-4 h-4 mr-2 text-blue-600" />
                   System Status
                 </h4>
-                <ul className="space-y-2 text-gray-600">
+                <ul className="space-y-2 text-gray-300">
                   {insights.system.map((insight, index) => (
                     <li key={index} className="flex items-start">
                       <span className="text-green-500 mr-2">•</span>
@@ -702,13 +702,13 @@ export default function PerformanceCharts({
             </div>
 
             {globalMode && performanceData.networkBreakdown && performanceData.networkBreakdown.length > 0 && (
-              <div className="mt-6 pt-4 border-t border-gray-200">
-                <h4 className="font-medium text-gray-700 mb-3">Network Performance Summary</h4>
+              <div className="mt-6 pt-4 border-t border-gray-500">
+                <h4 className="font-medium text-gray-200 mb-3">Network Performance Summary</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {performanceData.networkBreakdown.map((network) => (
-                    <div key={network.networkId} className="bg-gray-50 rounded-lg p-3">
-                      <h5 className="font-medium text-gray-900 mb-2">{network.networkId}</h5>
-                      <div className="space-y-1 text-sm text-gray-600">
+                    <div key={network.networkId} className="bg-blue-950 rounded-lg p-3">
+                      <h5 className="font-medium text-white mb-2">{network.networkId}</h5>
+                      <div className="space-y-1 text-sm text-gray-300">
                         <div className="flex justify-between">
                           <span>Download:</span>
                           <span className="font-medium">{network.avgDownload.toFixed(1)} Mbps</span>

@@ -286,7 +286,7 @@ export default function LiveMetrics({
 
   if (!globalMode && !networkId) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-black rounded-xl shadow-sm p-6">
         <div className="text-center py-8">
           <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-500">Select a network to view live metrics</p>
@@ -297,7 +297,7 @@ export default function LiveMetrics({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-black rounded-xl shadow-sm p-6">
         <div className="animate-pulse">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
@@ -311,7 +311,7 @@ export default function LiveMetrics({
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-black rounded-xl shadow-sm p-6">
         <div className="text-center py-8">
           <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
           <p className="text-red-600 mb-4">Failed to load live metrics</p>
@@ -332,11 +332,11 @@ export default function LiveMetrics({
   const StatusIcon = tempStatus.icon
 
   return (
-    <div className="bg-white rounded-xl shadow-sm">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-black rounded-xl shadow-sm">
+      <div className="p-6 border-b border-gray-500">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <h3 className="text-lg font-semibold text-gray-900">Live Metrics</h3>
+            <h3 className="text-lg font-semibold text-white">Live Metrics</h3>
             {globalMode ? (
               <Globe className="h-5 w-5 text-blue-500" />
             ) : (
@@ -364,7 +364,7 @@ export default function LiveMetrics({
             )}
             <button
               onClick={() => refetch()}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 text-gray-400 hover:text-gray-300 hover:bg-gray-100 rounded-lg transition-colors"
               title="Refresh"
             >
               <RefreshCw className="w-4 h-4" />
@@ -489,11 +489,11 @@ export default function LiveMetrics({
         {/* Detailed System Health */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* CPU Usage */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-blue-900 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center">
-                <Cpu className="h-5 w-5 text-gray-600 mr-2" />
-                <span className="text-sm font-medium text-gray-700">
+                <Cpu className="h-5 w-5 text-gray-300 mr-2" />
+                <span className="text-sm font-medium text-gray-200">
                   {globalMode ? 'Avg CPU Usage' : 'CPU Usage'}
                 </span>
               </div>
@@ -513,11 +513,11 @@ export default function LiveMetrics({
           </div>
 
           {/* Memory Usage */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-blue-900 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center">
-                <HardDrive className="h-5 w-5 text-gray-600 mr-2" />
-                <span className="text-sm font-medium text-gray-700">
+                <HardDrive className="h-5 w-5 text-gray-300 mr-2" />
+                <span className="text-sm font-medium text-gray-200">
                   {globalMode ? 'Avg Memory' : 'Memory'}
                 </span>
               </div>
@@ -537,9 +537,9 @@ export default function LiveMetrics({
           </div>
 
           {/* Data Transfer */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-blue-900 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium text-gray-200">
                 {globalMode ? 'Total Data Transfer' : 'Data Transfer'}
               </span>
             </div>
@@ -547,18 +547,18 @@ export default function LiveMetrics({
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center">
                   <TrendingDown className="h-4 w-4 text-green-500 mr-1" />
-                  <span className="text-gray-600">Download</span>
+                  <span className="text-gray-300">Download</span>
                 </div>
-                <span className="font-medium text-gray-900">
+                <span className="font-medium text-white">
                   {metricsWithTrends.totalDataTransfer.downloadGB.toFixed(2)} GB
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center">
                   <TrendingUp className="h-4 w-4 text-blue-500 mr-1" />
-                  <span className="text-gray-600">Upload</span>
+                  <span className="text-gray-300">Upload</span>
                 </div>
-                <span className="font-medium text-gray-900">
+                <span className="font-medium text-white">
                   {metricsWithTrends.totalDataTransfer.uploadGB.toFixed(2)} GB
                 </span>
               </div>
@@ -570,8 +570,8 @@ export default function LiveMetrics({
         <div className="mt-6 flex items-center justify-between text-sm">
           <div className="flex items-center space-x-4">
             <div className="flex items-center">
-              <div className={`w-2 h-2 rounded-full mr-2 ${isLive ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-              <span className="text-gray-600">
+              <div className={`w-2 h-2 rounded-full mr-2 ${isLive ? 'bg-green-500 animate-pulse' : 'bg-black/80'}`}></div>
+              <span className="text-gray-300">
                 {isLive ? 'Live monitoring active' : 'Monitoring paused'}
               </span>
             </div>
@@ -581,7 +581,7 @@ export default function LiveMetrics({
                   (metricsWithTrends.onlineNetworks === metricsWithTrends.networkCount ? 'bg-green-500' : 'bg-yellow-500') :
                   'bg-blue-500'
               }`}></div>
-              <span className="text-gray-600">
+              <span className="text-gray-300">
                 {globalMode ? 
                   `${metricsWithTrends.onlineNetworks}/${metricsWithTrends.networkCount} Networks Online` :
                   'Network Online'

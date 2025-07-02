@@ -14,7 +14,7 @@ export async function GET(
   try {
     await connectToDatabase();
     
-    const { networkId } = params;
+    const { networkId } = await params;
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'hourly';
     const startDate = searchParams.get('startDate');

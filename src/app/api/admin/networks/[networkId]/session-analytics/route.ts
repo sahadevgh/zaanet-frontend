@@ -10,7 +10,7 @@ export async function GET(
   try {
     await connectToDatabase();
     
-    const { networkId } = params;
+    const { networkId } = await params;
     const latest = await SessionAnalyticsModel.findOne({ networkId })
       .sort({ timestamp: -1 });
 

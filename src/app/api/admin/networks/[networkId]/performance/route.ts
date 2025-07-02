@@ -11,7 +11,7 @@ export async function GET(
   try {
     await connectToDatabase();
     
-    const { networkId } = params;
+    const { networkId } = await params;
     const oneHourAgo = new Date(Date.now() - 3600000);
 
     const [speedTests, systemMetrics] = await Promise.all([

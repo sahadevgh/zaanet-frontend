@@ -88,8 +88,6 @@ export async function GET() {
       } : null,
     }));
 
-console.log('Fetched networks:', networkData);
-
     return NextResponse.json(networkData, { status: 200 });
 
   } catch (error) {

@@ -441,7 +441,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
           <div className="flex gap-4 mt-8">
             <Button
               variant="outline"
-              className="w-full text-blue-100 border-blue-500 hover:bg-blue-800"
+              className="w-full text-blue-100 border-blue-500 hover:bg-gray-900"
               onClick={() => setShowConfirm(false)}
               disabled={isLoading}
             >
@@ -511,7 +511,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                         </FormLabel>
                         <FormControl>
                           <Input
-                            className="bg-blue-800 border-blue-700 text-blue-100 placeholder-blue-400"
+                            className="bg-gray-900 border-blue-700 text-blue-100 placeholder-blue-400"
                             placeholder="E.g. ZaaNet Home"
                             {...field}
                           />
@@ -532,7 +532,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                         </FormLabel>
                         <FormControl>
                           <Input
-                            className="bg-blue-800 border-blue-700 text-blue-100 placeholder-blue-400"
+                            className="bg-gray-900 border-blue-700 text-blue-100 placeholder-blue-400"
                             type="number"
                             min={0.1}
                             step={0.1}
@@ -560,7 +560,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                           rows={4}
                           placeholder="Describe your network (optional)"
                           maxLength={500}
-                          className="bg-blue-800 border-blue-700 text-blue-100 placeholder-blue-400"
+                          className="bg-gray-900 border-blue-700 text-blue-100 placeholder-blue-400"
                           {...field}
                         />
                       </FormControl>
@@ -583,7 +583,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                       </FormLabel>
                       <FormControl>
                         <Input
-                          className="bg-blue-800 border-blue-700 text-blue-100"
+                          className="bg-gray-900 border-blue-700 text-blue-100"
                           type="file"
                           accept="image/*"
                           onChange={(e) => onChange(e.target.files?.[0])}
@@ -605,7 +605,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                   <Button
                     type="button"
                     variant="outline"
-                    className="bg-blue-800 border-blue-500 text-blue-100 hover:bg-blue-700"
+                    className="bg-gray-900 border-blue-500 text-blue-100 hover:bg-blue-700"
                     onClick={handleDetectLocation}
                     disabled={!isConnected}
                   >
@@ -626,7 +626,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                         <FormLabel className="text-blue-100">Country</FormLabel>
                         <FormControl>
                           <Input
-                            className="bg-blue-800 border-blue-700 text-blue-100 placeholder-blue-400"
+                            className="bg-gray-900 border-blue-700 text-blue-100 placeholder-blue-400"
                             placeholder="E.g. Ghana"
                             {...field}
                           />
@@ -645,7 +645,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                         <FormLabel className="text-blue-100">Region</FormLabel>
                         <FormControl>
                           <Input
-                            className="bg-blue-800 border-blue-700 text-blue-100 placeholder-blue-400"
+                            className="bg-gray-900 border-blue-700 text-blue-100 placeholder-blue-400"
                             placeholder="E.g. Greater Accra"
                             {...field}
                           />
@@ -664,7 +664,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                         <FormLabel className="text-blue-100">City</FormLabel>
                         <FormControl>
                           <Input
-                            className="bg-blue-800 border-blue-700 text-blue-100 placeholder-blue-400"
+                            className="bg-gray-900 border-blue-700 text-blue-100 placeholder-blue-400"
                             placeholder="E.g. Accra"
                             {...field}
                           />
@@ -683,7 +683,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                         <FormLabel className="text-blue-100">Area</FormLabel>
                         <FormControl>
                           <Input
-                            className="bg-blue-800 border-blue-700 text-blue-100 placeholder-blue-400"
+                            className="bg-gray-900 border-blue-700 text-blue-100 placeholder-blue-400"
                             placeholder="E.g. Osu"
                             {...field}
                           />
@@ -704,7 +704,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                         <FormLabel className="text-blue-100">Latitude</FormLabel>
                         <FormControl>
                           <Input
-                            className="bg-blue-800 border-blue-700 text-blue-100 placeholder-blue-400"
+                            className="bg-gray-900 border-blue-700 text-blue-100 placeholder-blue-400"
                             type="number"
                             step="any"
                             placeholder="E.g. 5.6037"
@@ -726,7 +726,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                         <FormLabel className="text-blue-100">Longitude</FormLabel>
                         <FormControl>
                           <Input
-                            className="bg-blue-800 border-blue-700 text-blue-100 placeholder-blue-400"
+                            className="bg-gray-900 border-blue-700 text-blue-100 placeholder-blue-400"
                             type="number"
                             step="any"
                             placeholder="E.g. -0.187"
@@ -773,7 +773,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                         </FormLabel>
                         <FormControl>
                           <Input
-                            className="bg-blue-800 border-blue-700 text-blue-100 placeholder-blue-400"
+                            className="bg-gray-900 border-blue-700 text-blue-100 placeholder-blue-400"
                             placeholder="E.g. John Doe"
                             {...field}
                           />
@@ -794,7 +794,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                         </FormLabel>
                         <FormControl>
                           <Input
-                            className="bg-blue-800 border-blue-700 text-blue-100 placeholder-blue-400"
+                            className="bg-gray-900 border-blue-700 text-blue-100 placeholder-blue-400"
                             type="email"
                             placeholder="E.g. john@example.com"
                             {...field}
@@ -817,7 +817,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                       </FormLabel>
                       <FormControl>
                         <Input
-                          className="bg-blue-800 border-blue-700 text-blue-100 placeholder-blue-400"
+                          className="bg-gray-900 border-blue-700 text-blue-100 placeholder-blue-400"
                           placeholder="E.g. admin1@example.com,admin2@example.com"
                           onChange={(e) =>
                             field.onChange(
@@ -857,11 +857,11 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                         disabled={!isConnected}
                       >
                         <FormControl>
-                          <SelectTrigger className="bg-blue-800 border-blue-700 text-blue-100">
+                          <SelectTrigger className="bg-gray-900 border-blue-700 text-blue-100">
                             <SelectValue placeholder="Select device type" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="bg-blue-800 border-blue-700 text-blue-100">
+                        <SelectContent className="bg-gray-900 border-blue-700 text-blue-100">
                           <SelectItem value="raspberry-pi-4">Raspberry Pi 4</SelectItem>
                           <SelectItem value="raspberry-pi-5">Raspberry Pi 5</SelectItem>
                           <SelectItem value="custom">Custom</SelectItem>
@@ -883,7 +883,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                           <FormLabel className="text-blue-100">CPU</FormLabel>
                           <FormControl>
                             <Input
-                              className="bg-blue-800 border-blue-700 text-blue-100 placeholder-blue-400"
+                              className="bg-gray-900 border-blue-700 text-blue-100 placeholder-blue-400"
                               placeholder="E.g. Quad-core 1.5 GHz"
                               {...field}
                             />
@@ -902,7 +902,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                           <FormLabel className="text-blue-100">Memory</FormLabel>
                           <FormControl>
                             <Input
-                              className="bg-blue-800 border-blue-700 text-blue-100 placeholder-blue-400"
+                              className="bg-gray-900 border-blue-700 text-blue-100 placeholder-blue-400"
                               placeholder="E.g. 4GB RAM"
                               {...field}
                             />
@@ -921,7 +921,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                           <FormLabel className="text-blue-100">Storage</FormLabel>
                           <FormControl>
                             <Input
-                              className="bg-blue-800 border-blue-700 text-blue-100 placeholder-blue-400"
+                              className="bg-gray-900 border-blue-700 text-blue-100 placeholder-blue-400"
                               placeholder="E.g. 32GB SD"
                               {...field}
                             />
@@ -954,7 +954,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 mt-8">
-          <div className="bg-blue-800 rounded-2xl p-6 shadow-lg">
+          <div className="bg-gray-900 rounded-2xl p-6 shadow-lg">
             <h2 className="text-lg font-bold text-blue-100 mb-4">
               Why Host on ZaaNet?
             </h2>
@@ -974,7 +974,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
               ))}
             </ul>
           </div>
-          <div className="bg-blue-800 rounded-2xl p-6 shadow-lg">
+          <div className="bg-gray-900 rounded-2xl p-6 shadow-lg">
             <h2 className="text-lg font-bold text-blue-100 mb-4">Getting Started</h2>
             <ul className="space-y-3 text-sm text-blue-200">
               {[

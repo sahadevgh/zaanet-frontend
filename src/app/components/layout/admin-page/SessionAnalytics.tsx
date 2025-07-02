@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { 
   Clock, 
   Users, 
@@ -32,6 +32,8 @@ import {
   Area,
   AreaChart
 } from 'recharts'
+import { useAdminQueries } from '@/hooks/useAdminQueries'
+import { useNetworkQueries } from '@/hooks/useNetworkQueries'
 
 interface SessionAnalyticsProps {
   detailed?: boolean
@@ -75,7 +77,102 @@ export default function SessionAnalytics({
   globalMode = false,
   isLive = true
 }: SessionAnalyticsProps) {
-  const [sessionData, setSessionData] = useState<SessionData>({
+  const [activeView, setActiveView] = useState<'overview' | 'devices' | 'activity'>('overview')
+
+  // Use appropriate hooks based on mode
+  const adminQueries = useAdminQueries()
+  const networkQueries = networkId ? useNetworkQueries(networkId) : null
+
+  // Select the appropriate query based on mode
+  const sessionQuery = globalMode 
+    ? adminQueries.useDashboard() // Global mode uses admin dashboard
+    : networkId 
+      ? networkQueries?.useSessionAnalytics() // Network mode uses network session analytics
+      : null
+
+  // Define a type for rawData to avoid property access errors
+  type RawDataType = {
+    sessionAnalytics?: {
+      total?: number
+      active?: number
+      completed?: number
+      averageDuration?: number
+      totalSpeedTests?: number
+      totalDataTransfer?: { downloadGB: number; uploadGB: number }
+      deviceBreakdown?: { mobile: number; desktop: number; tablet: number; unknown: number }
+      hourlyActivity?: Array<{ hour: number; sessions: number }>
+      trends?: {
+        sessionsChange: number
+        durationChange: number
+        completionChange: number
+      }
+      networkBreakdown?: Array<{
+        networkId: string
+        sessions: number
+        avgDuration: number
+        completionRate: number
+      }>
+      timeRange?: string
+      peakHour?: number
+      sessionQuality?: {
+        completionRate: number
+        avgTestsPerSession: number
+        avgDataPerSession: number
+      }
+    }
+    totalSessions?: number
+    activeSessions?: number
+    completedSessions?: number
+    avgSessionDuration?: number
+    totalTests?: number
+    dataTransfer?: { downloadGB: number; uploadGB: number }
+    deviceStats?: { mobile: number; desktop: number; tablet: number; unknown: number }
+    hourlyStats?: Array<{ hour: number; sessions: number }>
+    trends?: {
+      sessionsChange: number
+      durationChange: number
+      completionChange: number
+    }
+    networkStats?: Array<{
+      networkId: string
+      sessions: number
+      avgDuration: number
+      completionRate: number
+    }>
+    timeRange?: string
+    peakActivity?: { hour: number }
+    completionRate?: number
+    avgTestsPerSession?: number
+    avgDataPerSession?: number
+  }
+
+  const { data: rawData, isLoading: loading, error, refetch } = sessionQuery || { 
+    data: null, 
+    isLoading: false, 
+    error: null, 
+    refetch: () => {} 
+  }
+
+  // Transform the API data to match our SessionData interface
+  const sessionData: SessionData = rawData ? {
+    total: (rawData as RawDataType).sessionAnalytics?.total ?? (rawData as RawDataType).totalSessions ?? 0,
+    active: (rawData as RawDataType).sessionAnalytics?.active ?? (rawData as RawDataType).activeSessions ?? 0,
+    completed: (rawData as RawDataType).sessionAnalytics?.completed ?? (rawData as RawDataType).completedSessions ?? 0,
+    averageDuration: (rawData as RawDataType).sessionAnalytics?.averageDuration ?? (rawData as RawDataType).avgSessionDuration ?? 0,
+    totalSpeedTests: (rawData as RawDataType).sessionAnalytics?.totalSpeedTests ?? (rawData as RawDataType).totalTests ?? 0,
+    totalDataTransfer: (rawData as RawDataType).sessionAnalytics?.totalDataTransfer ?? (rawData as RawDataType).dataTransfer ?? { downloadGB: 0, uploadGB: 0 },
+    deviceBreakdown: (rawData as RawDataType).sessionAnalytics?.deviceBreakdown ?? (rawData as RawDataType).deviceStats ?? { mobile: 0, desktop: 0, tablet: 0, unknown: 0 },
+    hourlyActivity: (rawData as RawDataType).sessionAnalytics?.hourlyActivity ?? (rawData as RawDataType).hourlyStats ?? [],
+    trends: (rawData as RawDataType).sessionAnalytics?.trends ?? (rawData as RawDataType).trends,
+    networkBreakdown: (rawData as RawDataType).sessionAnalytics?.networkBreakdown ?? (rawData as RawDataType).networkStats ?? [],
+    timeRange: (rawData as RawDataType).sessionAnalytics?.timeRange ?? '24h',
+    peakHour: (rawData as RawDataType).sessionAnalytics?.peakHour ?? (rawData as RawDataType).peakActivity?.hour,
+    sessionQuality: (rawData as RawDataType).sessionAnalytics?.sessionQuality ?? {
+      completionRate: (rawData as RawDataType).completionRate ?? 0,
+      avgTestsPerSession: (rawData as RawDataType).avgTestsPerSession ?? 0,
+      avgDataPerSession: (rawData as RawDataType).avgDataPerSession ?? 0
+    }
+  } : {
     total: 0,
     active: 0,
     completed: 0,
@@ -88,96 +185,7 @@ export default function SessionAnalytics({
     networkBreakdown: [],
     timeRange: '24h',
     sessionQuality: { completionRate: 0, avgTestsPerSession: 0, avgDataPerSession: 0 }
-  })
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
-  const [activeView, setActiveView] = useState<'overview' | 'devices' | 'activity'>('overview')
-
-  const fetchSessionData = async () => {
-    try {
-      setError(null)
-      let endpoint = '/api/admin/session-analytics'
-      
-      if (globalMode) {
-        endpoint = '/api/admin/global/session-analytics'
-      } else if (networkId) {
-        endpoint = `/api/admin/${networkId}/session-analytics`
-      }
-
-      // Enhanced mock data based on mode
-      const mockHourlyActivity = Array.from({ length: 24 }, (_, hour) => ({
-        hour,
-        sessions: Math.floor(Math.random() * 20 + 5 + Math.sin(hour * Math.PI / 12) * 10)
-      }))
-
-      const totalSessions = globalMode ? 234 : 67
-      const activeSessions = globalMode ? 45 : 12
-      const completedSessions = Math.floor(totalSessions * 0.85)
-
-      const mockData: SessionData = {
-        total: totalSessions,
-        active: activeSessions,
-        completed: completedSessions,
-        averageDuration: globalMode ? 2847 : 3234, // seconds
-        totalSpeedTests: globalMode ? 423 : 134,
-        totalDataTransfer: { 
-          downloadGB: globalMode ? 1247.6 : 345.2, 
-          uploadGB: globalMode ? 342.8 : 87.4 
-        },
-        deviceBreakdown: globalMode ? {
-          mobile: 98,
-          desktop: 87,
-          tablet: 34,
-          unknown: 15
-        } : {
-          mobile: 28,
-          desktop: 24,
-          tablet: 9,
-          unknown: 6
-        },
-        hourlyActivity: mockHourlyActivity,
-        trends: {
-          sessionsChange: Math.random() > 0.5 ? 15.7 : -8.2,
-          durationChange: Math.random() > 0.5 ? 12.3 : -5.1,
-          completionChange: Math.random() > 0.5 ? 7.8 : -3.4
-        },
-        networkBreakdown: globalMode ? [
-          { networkId: 'net-001', sessions: 89, avgDuration: 3245, completionRate: 87.3 },
-          { networkId: 'net-002', sessions: 76, avgDuration: 2934, completionRate: 82.1 },
-          { networkId: 'net-003', sessions: 69, avgDuration: 2765, completionRate: 89.7 }
-        ] : [],
-        timeRange: '24h',
-        peakHour: mockHourlyActivity.reduce((max, curr) => curr.sessions > max.sessions ? curr : max).hour,
-        sessionQuality: {
-          completionRate: (completedSessions / totalSessions) * 100,
-          avgTestsPerSession: totalSessions > 0 ? (globalMode ? 423 : 134) / totalSessions : 0,
-          avgDataPerSession: totalSessions > 0 ? (globalMode ? 1590.4 : 432.6) / totalSessions : 0
-        }
-      }
-
-      setSessionData(mockData)
-      setLoading(false)
-      setLastUpdate(new Date())
-    } catch (error) {
-      console.error('Failed to fetch session analytics:', error)
-      setError('Failed to fetch session analytics')
-      setLoading(false)
-    }
   }
-
-  useEffect(() => {
-    if (globalMode || networkId) {
-      fetchSessionData()
-    }
-  }, [networkId, globalMode])
-
-  useEffect(() => {
-    if (isLive && (globalMode || networkId)) {
-      const interval = setInterval(fetchSessionData, 60000)
-      return () => clearInterval(interval)
-    }
-  }, [isLive, networkId, globalMode])
 
   const formatDuration = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600)
@@ -197,7 +205,7 @@ export default function SessionAnalytics({
   const getTrendColor = (value: number) => {
     if (value > 0) return 'text-green-600'
     if (value < 0) return 'text-red-600'
-    return 'text-gray-500'
+    return 'text-gray-400'
   }
 
   const deviceData = [
@@ -211,10 +219,10 @@ export default function SessionAnalytics({
 
   if (!globalMode && !networkId) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-black rounded-xl shadow-sm p-6">
         <div className="text-center py-8">
           <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">Select a network to view session analytics</p>
+          <p className="text-gray-400">Select a network to view session analytics</p>
         </div>
       </div>
     )
@@ -222,7 +230,7 @@ export default function SessionAnalytics({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-black rounded-xl shadow-sm p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-gray-200 rounded w-1/3"></div>
           <div className="grid grid-cols-2 gap-4">
@@ -237,12 +245,14 @@ export default function SessionAnalytics({
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-black rounded-xl shadow-sm p-6">
         <div className="text-center py-8">
           <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-red-600 mb-4">
+            {error instanceof Error ? error.message : 'Failed to fetch session analytics'}
+          </p>
           <button
-            onClick={fetchSessionData}
+            onClick={() => refetch()}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
@@ -254,11 +264,11 @@ export default function SessionAnalytics({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm">
+    <div className="bg-black rounded-xl shadow-sm">
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <h3 className="text-lg font-semibold text-gray-900">Session Analytics</h3>
+            <h3 className="text-lg font-semibold text-white">Session Analytics</h3>
             {globalMode ? (
               <Globe className="h-5 w-5 text-blue-500" />
             ) : (
@@ -266,11 +276,11 @@ export default function SessionAnalytics({
             )}
           </div>
           <div className="flex items-center space-x-2">
-            <div className="flex bg-gray-100 rounded-lg p-1">
+            <div className="flex bg-blue-800 rounded-lg p-1">
               <button
                 onClick={() => setActiveView('overview')}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  activeView === 'overview' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
+                  activeView === 'overview' ? 'bg-black text-white shadow-sm' : 'text-gray-300'
                 }`}
               >
                 Overview
@@ -278,7 +288,7 @@ export default function SessionAnalytics({
               <button
                 onClick={() => setActiveView('devices')}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  activeView === 'devices' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
+                  activeView === 'devices' ? 'bg-black text-white shadow-sm' : 'text-gray-300'
                 }`}
               >
                 Devices
@@ -286,26 +296,24 @@ export default function SessionAnalytics({
               <button
                 onClick={() => setActiveView('activity')}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  activeView === 'activity' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
+                  activeView === 'activity' ? 'bg-black text-white shadow-sm' : 'text-gray-300'
                 }`}
               >
                 Activity
               </button>
             </div>
             <button
-              onClick={fetchSessionData}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={() => refetch()}
+              className="p-2 text-gray-400 hover:text-gray-300 hover:bg-blue-800 rounded-lg transition-colors"
               title="Refresh"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
         </div>
-        {lastUpdate && (
-          <p className="text-xs text-gray-400 mt-1">
-            Last updated: {lastUpdate.toLocaleTimeString()} • Timeframe: {sessionData.timeRange}
-          </p>
-        )}
+        <p className="text-xs text-gray-400 mt-1">
+          Timeframe: {sessionData.timeRange}
+        </p>
       </div>
 
       <div className="p-6">
@@ -378,13 +386,13 @@ export default function SessionAnalytics({
         {activeView === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Session Quality Metrics */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-4">Session Quality</h4>
+            <div className="bg-blue-900 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-gray-200 mb-4">Session Quality</h4>
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">Completion Rate</span>
-                    <span className="font-medium">{sessionData.sessionQuality?.completionRate.toFixed(1)}%</span>
+                    <span className="text-gray-300">Completion Rate</span>
+                    <span className="font-medium text-white">{sessionData.sessionQuality?.completionRate.toFixed(1)}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
@@ -395,41 +403,43 @@ export default function SessionAnalytics({
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-600">Avg Tests/Session</p>
-                    <p className="font-bold text-gray-900">{sessionData.sessionQuality?.avgTestsPerSession.toFixed(1)}</p>
+                    <p className="text-gray-300">Avg Tests/Session</p>
+                    <p className="font-bold text-white">{sessionData.sessionQuality?.avgTestsPerSession.toFixed(1)}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600">Avg Data/Session</p>
-                    <p className="font-bold text-gray-900">{sessionData.sessionQuality?.avgDataPerSession.toFixed(1)} GB</p>
+                    <p className="text-gray-300">Avg Data/Session</p>
+                    <p className="font-bold text-white">{sessionData.sessionQuality?.avgDataPerSession.toFixed(1)} GB</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Peak Activity */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-4">Activity Summary</h4>
+            <div className="bg-blue-900 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-gray-200 mb-4">Activity Summary</h4>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Peak Hour:</span>
-                  <span className="font-medium">{sessionData.peakHour}:00 - {(sessionData.peakHour || 0) + 1}:00</span>
+                  <span className="text-gray-400">Peak Hour:</span>
+                  <span className="font-medium text-gray-300">
+                    {sessionData.peakHour !== undefined ? `${sessionData.peakHour}:00 - ${sessionData.peakHour + 1}:00` : 'N/A'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Most Used Device:</span>
-                  <span className="font-medium">
+                  <span className="text-gray-400">Most Used Device:</span>
+                  <span className="font-medium text-gray-300">
                     {deviceData.reduce((max, curr) => curr.value > max.value ? curr : max).name}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Total Data Transfer:</span>
-                  <span className="font-medium">
+                  <span className="text-gray-400">Total Data Transfer:</span>
+                  <span className="font-medium text-gray-300">
                     {(sessionData.totalDataTransfer.downloadGB + sessionData.totalDataTransfer.uploadGB).toFixed(1)} GB
                   </span>
                 </div>
                 {globalMode && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Networks Active:</span>
-                    <span className="font-medium">{sessionData.networkBreakdown?.length || 0}</span>
+                    <span className="text-gray-400">Networks Active:</span>
+                    <span className="font-medium text-gray-300">{sessionData.networkBreakdown?.length || 0}</span>
                   </div>
                 )}
               </div>
@@ -440,8 +450,8 @@ export default function SessionAnalytics({
         {activeView === 'devices' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Device Breakdown Chart */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-4">Device Distribution</h4>
+            <div className="bg-blue-900 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-gray-200 mb-4">Device Distribution</h4>
               <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsPieChart>
@@ -457,8 +467,8 @@ export default function SessionAnalytics({
             </div>
 
             {/* Device Details */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-4">Device Breakdown</h4>
+            <div className="bg-blue-900 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-gray-200 mb-4">Device Breakdown</h4>
               <div className="space-y-3">
                 {deviceData.map((device) => {
                   const Icon = device.icon
@@ -467,11 +477,11 @@ export default function SessionAnalytics({
                     <div key={device.name} className="flex items-center justify-between">
                       <div className="flex items-center">
                         <Icon className="h-4 w-4 mr-2" style={{ color: device.color }} />
-                        <span className="text-sm font-medium text-gray-700">{device.name}</span>
+                        <span className="text-sm font-medium text-gray-200">{device.name}</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600">{device.value}</span>
-                        <span className="text-xs text-gray-500">({percentage}%)</span>
+                        <span className="text-sm text-gray-300">{device.value}</span>
+                        <span className="text-xs text-gray-400">({percentage}%)</span>
                         <div className="w-16 bg-gray-200 rounded-full h-2">
                           <div 
                             className="h-2 rounded-full transition-all duration-300"
@@ -493,8 +503,8 @@ export default function SessionAnalytics({
         {activeView === 'activity' && (
           <div className="space-y-6">
             {/* Hourly Activity Chart */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-4">24-Hour Activity Pattern</h4>
+            <div className="bg-blue-900 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-gray-200 mb-4">24-Hour Activity Pattern</h4>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={sessionData.hourlyActivity}>
@@ -530,23 +540,23 @@ export default function SessionAnalytics({
 
             {/* Network Breakdown (Global Mode Only) */}
             {globalMode && sessionData.networkBreakdown && sessionData.networkBreakdown.length > 0 && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-4">Network Performance</h4>
+              <div className="bg-blue-900 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-200 mb-4">Network Performance</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {sessionData.networkBreakdown.map((network) => (
-                    <div key={network.networkId} className="bg-white rounded-lg p-3 shadow-sm">
-                      <h5 className="font-medium text-gray-900 mb-2">{network.networkId}</h5>
+                    <div key={network.networkId} className="bg-black rounded-lg p-3 shadow-sm">
+                      <h5 className="font-medium text-white mb-2">{network.networkId}</h5>
                       <div className="space-y-1 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Sessions:</span>
+                          <span className="text-gray-300">Sessions:</span>
                           <span className="font-medium">{network.sessions}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Avg Duration:</span>
+                          <span className="text-gray-300">Avg Duration:</span>
                           <span className="font-medium">{formatDuration(network.avgDuration)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Completion:</span>
+                          <span className="text-gray-300">Completion:</span>
                           <span className="font-medium">{network.completionRate.toFixed(1)}%</span>
                         </div>
                       </div>
@@ -562,8 +572,8 @@ export default function SessionAnalytics({
           <div className="mt-6 pt-4 border-t border-gray-200">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-sm">
               <div>
-                <h4 className="font-medium text-gray-700 mb-3">Quality Metrics</h4>
-                <ul className="space-y-2 text-gray-600">
+                <h4 className="font-medium text-gray-200 mb-3">Quality Metrics</h4>
+                <ul className="space-y-2 text-gray-300">
                   <li className="flex justify-between">
                     <span>Completion Rate:</span>
                     <span className="font-medium">{sessionData.sessionQuality?.completionRate.toFixed(1)}%</span>
@@ -574,17 +584,22 @@ export default function SessionAnalytics({
                   </li>
                   <li className="flex justify-between">
                     <span>Data Efficiency:</span>
-                    <span className="font-medium">Good</span>
+                    <span className="font-medium">
+                      {(sessionData.sessionQuality?.avgDataPerSession ?? 0) > 10 ? 'High' : 
+                       (sessionData.sessionQuality?.avgDataPerSession ?? 0) > 5 ? 'Good' : 'Low'}
+                    </span>
                   </li>
                 </ul>
               </div>
               
               <div>
-                <h4 className="font-medium text-gray-700 mb-3">Usage Patterns</h4>
-                <ul className="space-y-2 text-gray-600">
+                <h4 className="font-medium text-gray-200 mb-3">Usage Patterns</h4>
+                <ul className="space-y-2 text-gray-300">
                   <li className="flex justify-between">
                     <span>Peak Activity:</span>
-                    <span className="font-medium">{sessionData.peakHour}:00</span>
+                    <span className="font-medium">
+                      {sessionData.peakHour !== undefined ? `${sessionData.peakHour}:00` : 'N/A'}
+                    </span>
                   </li>
                   <li className="flex justify-between">
                     <span>Primary Device:</span>
@@ -594,26 +609,33 @@ export default function SessionAnalytics({
                     <span>Session Trend:</span>
                     <span className={`font-medium ${getTrendColor(sessionData.trends?.sessionsChange || 0)}`}>
                       {sessionData.trends?.sessionsChange && sessionData.trends.sessionsChange > 0 ? '+' : ''}
-                      {sessionData.trends?.sessionsChange.toFixed(1)}%
+                      {sessionData.trends?.sessionsChange?.toFixed(1) || '0'}%
                     </span>
                   </li>
                 </ul>
               </div>
 
               <div>
-                <h4 className="font-medium text-gray-700 mb-3">Performance</h4>
-                <ul className="space-y-2 text-gray-600">
+                <h4 className="font-medium text-gray-200 mb-3">Performance</h4>
+                <ul className="space-y-2 text-gray-300">
                   <li className="flex justify-between">
                     <span>System Load:</span>
-                    <span className="font-medium">Normal</span>
+                    <span className="font-medium">
+                      {sessionData.active > 50 ? 'High' : sessionData.active > 20 ? 'Normal' : 'Low'}
+                    </span>
                   </li>
                   <li className="flex justify-between">
                     <span>Avg Response:</span>
-                    <span className="font-medium">Fast</span>
+                    <span className="font-medium">
+                      {sessionData.averageDuration < 1800 ? 'Fast' : sessionData.averageDuration < 3600 ? 'Normal' : 'Slow'}
+                    </span>
                   </li>
                   <li className="flex justify-between">
                     <span>Reliability:</span>
-                    <span className="font-medium">Excellent</span>
+                    <span className="font-medium">
+                      {(sessionData.sessionQuality?.completionRate ?? 0) > 90 ? 'Excellent' : 
+                       (sessionData.sessionQuality?.completionRate ?? 0) > 75 ? 'Good' : 'Poor'}
+                    </span>
                   </li>
                 </ul>
               </div>

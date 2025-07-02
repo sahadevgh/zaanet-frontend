@@ -9,9 +9,9 @@ import { useNetworkQueries } from "@/hooks/useNetworkQueries";
 import { INetworkConfig } from "@/app/server/models/NetworkConfig.model";
 import ReportsPage from "./ReportsPage";
 import AlertsPage from "./AlertsPage";
-import ActiveUsers from "./ActiveUsers";
 import PerformanceCharts from "./PerformanceCharts";
 import LiveMetrics from "./LiveMetrics";
+import SessionAnalytics from "./SessionAnalytics";
 
 // Simplified DashboardData type
 type DashboardData = {
@@ -65,7 +65,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen min-h-screen bg-gradient-to-br from-blue-900 to-black overflow-hidden">
       <DashboardSidebar
         currentView={currentView}
         setCurrentView={setCurrentView}
@@ -115,10 +115,10 @@ export default function AdminDashboard() {
                   globalMode={globalMode}
                 />
               )}
-              {currentView === "users" && <ActiveUsers networkId={selectedNetworkId} globalMode={globalMode} />}
+              {currentView === "lanalytics" && <LiveMetrics networkId={selectedNetworkId} globalMode={globalMode} isLive={true} />}
+              {currentView === "sanalytics" && <SessionAnalytics networkId={selectedNetworkId} globalMode={globalMode} isLive={true} />}
               {currentView === "performance" && <PerformanceCharts networkId={selectedNetworkId} globalMode={globalMode} />}
-              {currentView === "analytics" && <LiveMetrics networkId={selectedNetworkId} globalMode={globalMode} isLive={true} />}
-              {currentView === "reports" && <ReportsPage networkId={selectedNetworkId} />}
+              {currentView === "reports" && <ReportsPage networkId={selectedNetworkId} globalMode={globalMode} />}
               {currentView === "alerts" && <AlertsPage globalMode={globalMode} networkId={selectedNetworkId} />}
             </>
           )}
@@ -145,7 +145,7 @@ function NetworkSelector({
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading networks...</p>
+          <p className="text-gray-300">Loading networks...</p>
         </div>
       </div>
     );
@@ -154,8 +154,8 @@ function NetworkSelector({
   return (
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Select a Network</h1>
-        <p className="text-gray-600">Choose a network to monitor and manage</p>
+        <h1 className="text-3xl font-bold text-white mb-2">Select a Network</h1>
+        <p className="text-gray-300">Choose a network to monitor and manage</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -171,9 +171,9 @@ function NetworkSelector({
 
       {networks.length === 0 && (
         <div className="text-center py-12">
-          <Wifi className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No networks found</h3>
-          <p className="text-gray-500 mb-6">No networks are currently available.</p>
+          <Wifi className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-white mb-2">No networks found</h3>
+          <p className="text-gray-300 mb-6">No networks are currently available.</p>
           <button
             onClick={onRefresh}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -197,7 +197,7 @@ function NetworkCard({ network, onSelect }: { network: INetworkConfig; onSelect:
       case "offline":
         return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-blue-900 text-gray-200";
     }
   };
 
@@ -216,7 +216,7 @@ function NetworkCard({ network, onSelect }: { network: INetworkConfig; onSelect:
 
   return (
     <div
-      className="bg-white rounded-xl shadow-sm border hover:shadow-md hover:border-blue-200 transition-all cursor-pointer p-6"
+      className="bg-blue-900 rounded-xl shadow-sm border hover:shadow-md hover:border-blue-200 transition-all cursor-pointer p-6"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
@@ -224,8 +224,8 @@ function NetworkCard({ network, onSelect }: { network: INetworkConfig; onSelect:
             <Wifi className="w-6 h-6 text-blue-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">{network.ssid}</h3>
-            <p className="text-sm text-gray-500">
+            <h3 className="font-semibold text-white">{network.ssid}</h3>
+            <p className="text-sm text-gray-300">
               {network?.location?.city || "Unknown"}, {network?.location?.area || "Unknown"}
             </p>
           </div>
@@ -238,12 +238,12 @@ function NetworkCard({ network, onSelect }: { network: INetworkConfig; onSelect:
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-500">Network ID</span>
-          <span className="font-mono text-sm text-gray-600">{network.networkId.slice(0, 8)}...</span>
+          <span className="text-sm text-gray-300">Network ID</span>
+          <span className="font-mono text-sm text-gray-300">{network.networkId.slice(0, 8)}...</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-500">Price</span>
-          <span className="font-medium text-gray-900">{network.price} USDT/day</span>
+          <span className="text-sm text-gray-300">Price</span>
+          <span className="font-medium text-white">{network.price} USDT/day</span>
         </div>
       </div>
 
@@ -297,9 +297,9 @@ function OverviewPage({ isLive, networkId, globalMode }: OverviewPageProps) {
 
   const dashboardData: DashboardData =
     data && typeof data === "object" &&
-    "overview" in data &&
-    "performance" in data &&
-    "traffic" in data
+      "overview" in data &&
+      "performance" in data &&
+      "traffic" in data
       ? (data as DashboardData)
       : defaultDashboardData;
 
@@ -337,11 +337,11 @@ function OverviewPage({ isLive, networkId, globalMode }: OverviewPageProps) {
 
   return (
     <div className="space-y-6">
-      {process.env.NODE_ENV === "development" && (
-        <div className="bg-gray-100 p-4 rounded text-xs">
+      {/* {process.env.NODE_ENV === "development" && (
+        <div className="bg-blue-900 p-4 rounded text-xs text-white">
           <pre>{JSON.stringify(dashboardData, null, 2)}</pre>
         </div>
-      )}
+      )} */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
@@ -403,11 +403,11 @@ function MetricCard({ title, value, icon: Icon, color, trend }: MetricCardProps)
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+    <div className="bg-blue-900 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-600 mb-1">{title}</p>
-          <p className="text-lg font-bold text-gray-900">{value}</p>
+          <p className="text-sm text-gray-300 mb-1">{title}</p>
+          <p className="text-lg font-bold text-white">{value}</p>
           {/* {trend && (
             <p className="text-sm text-green-600 mt-1">
               {trend} from last hour
@@ -438,14 +438,14 @@ function SystemHealthCard({ data }: { data?: SystemHealthData }) {
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">System Health</h3>
+    <div className="bg-blue-900 rounded-xl shadow-sm p-6">
+      <h3 className="text-lg font-semibold text-white mb-4">System Health</h3>
       <div className="space-y-4">
         {healthMetrics.map((metric) => (
           <div key={metric.label}>
             <div className="flex justify-between text-sm mb-1">
-              <span className="text-gray-600">{metric.label}</span>
-              <span className="font-medium">{metric.value}%</span>
+              <span className="text-gray-300">{metric.label}</span>
+              <span className="font-medium text-gray-300">{metric.value}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
