@@ -1,379 +1,469 @@
 "use client";
-import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/app/components/ui/table";
-import { Button } from "@/app/components/ui/button";
-import { Input } from "@/app/components/ui/input";
-import { toast } from "sonner";
-import { Users, Wallet, Settings, TrendingUp, User } from "lucide-react";
-import Layout from "@/app/components/layout/Layout";
 
-// Mock data
-const mockPlatformStats = {
-  totalHosts: 42,
-  activeHosts: 35,
-  totalNetworks: 67,
-  activeNetworks: 58,
-  activeSessions: 23,
-  totalRevenue: "2,450.75",
-  platformFee: 10, // Percentage
-  recentHostsGrowth: 12, // Percentage
-  recentRevenueGrowth: 8, // Percentage
+import { useState, useEffect } from "react";
+import { Wifi, Users, Activity, Download, TrendingUp, RefreshCw } from "lucide-react";
+import DashboardHeader from "./DashboardHeader";
+import DashboardSidebar from "./DashboardSidebar";
+import { useAdminQueries } from "@/hooks/useAdminQueries";
+import { useNetworkQueries } from "@/hooks/useNetworkQueries";
+import { INetworkConfig } from "@/app/server/models/NetworkConfig.model";
+import ReportsPage from "./ReportsPage";
+import AlertsPage from "./AlertsPage";
+import ActiveUsers from "./ActiveUsers";
+import PerformanceCharts from "./PerformanceCharts";
+import LiveMetrics from "./LiveMetrics";
+
+// Simplified DashboardData type
+type DashboardData = {
+  overview: {
+    activeUsers: number;
+    totalSessions: number;
+    systemHealth: {
+      cpu: number;
+      memory: number;
+      temperature: number;
+      diskUsage: number;
+    };
+  };
+  performance: {
+    averageSpeed: {
+      download: number;
+      upload: number;
+    };
+  };
+  traffic: {
+    totalDataTransfer: {
+      downloadGB: number;
+      uploadGB: number;
+    };
+  };
 };
 
-const mockHosts = [
-  {
-    id: "1",
-    name: "Kofi Mensah",
-    wallet: "0xA1FA...456C",
-    networks: 2,
-    totalEarnings: "74.25",
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "Ama Darko",
-    wallet: "0xB2FB...789D",
-    networks: 1,
-    totalEarnings: "45.75",
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "Kwame Owusu",
-    wallet: "0xC3FC...012E",
-    networks: 3,
-    totalEarnings: "120.50",
-    status: "active",
-  },
-  {
-    id: "4",
-    name: "Abena Prempeh",
-    wallet: "0xD4FD...345F",
-    networks: 1,
-    totalEarnings: "32.00",
-    status: "inactive",
-  },
-];
-
-const mockTransactions = [
-  {
-    id: "tx1",
-    date: "2024-04-21",
-    user: "0xE5FE...678G",
-    network: "Zaa Home WiFi",
-    amount: "1.00",
-    platformFee: "0.10",
-  },
-  {
-    id: "tx2",
-    date: "2024-04-21",
-    user: "0xF6FF...901H",
-    network: "Office Hotspot",
-    amount: "1.50",
-    platformFee: "0.15",
-  },
-  {
-    id: "tx3",
-    date: "2024-04-20",
-    user: "0xG7FG...234I",
-    network: "Downtown Cafe",
-    amount: "0.75",
-    platformFee: "0.08",
-  },
-  {
-    id: "tx4",
-    date: "2024-04-20",
-    user: "0xH8FH...567J",
-    network: "Community Center",
-    amount: "2.00",
-    platformFee: "0.20",
-  },
-  {
-    id: "tx5",
-    date: "2024-04-19",
-    user: "0xI9FI...890K",
-    network: "Zaa Home WiFi",
-    amount: "1.00",
-    platformFee: "0.10",
-  },
-];
-
 export default function AdminDashboard() {
-  const [platformFee, setPlatformFee] = useState(mockPlatformStats.platformFee);
-  const [hosts, setHosts] = useState(mockHosts);
-  
-  const handleUpdatePlatformFee = (newFee: number) => {
-    if (newFee >= 0 && newFee <= 100) {
-      setPlatformFee(newFee);
-      toast.success(`Platform fee updated to ${newFee}%`);
-    } else {
-      toast.error("Platform fee must be between 0-100%");
+  const [currentView, setCurrentView] = useState<string>("overview");
+  const [isLive, setIsLive] = useState(true);
+  const [selectedNetworkId, setSelectedNetworkId] = useState<string | null>(null);
+  const [globalMode, setGlobalMode] = useState(true);
+
+  const { useNetworks } = useAdminQueries();
+  const {
+    data: networksData,
+    isLoading: loadingNetworks,
+    refetch: refetchNetworks,
+    error: networksError
+  } = useNetworks();
+
+
+  const networks: INetworkConfig[] = Array.isArray(networksData) ? networksData : [];
+
+
+  const handleModeSwitch = (isGlobal: boolean) => {
+    setGlobalMode(isGlobal);
+    if (isGlobal) {
+      setSelectedNetworkId(null);
     }
   };
-
-  const handleToggleHostStatus = (id: string) => {
-    setHosts(hosts.map(host => 
-      host.id === id ? { ...host, status: host.status === "active" ? "inactive" : "active" } : host
-    ));
-    
-    const host = hosts.find(h => h.id === id);
-    if (host) {
-      toast.success(`${host.name} is now ${host.status === "active" ? "inactive" : "active"}`);
-    }
-  };
-
-  // Calculate total platform revenue
-  const platformRevenue = mockTransactions.reduce(
-    (sum, tx) => sum + parseFloat(tx.platformFee),
-    0
-  ).toFixed(2);
 
   return (
-    <Layout>
-      <div className="container py-10">
-        <h1 className="text-3xl font-bold text-zaanet-purple mb-2">Admin Dashboard</h1>
-        <p className="text-gray-600 mb-8">Manage the ZaaNet platform and monitor activity</p>
-        
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Host Network
-              </CardTitle>
-              <CardDescription>Host and network statistics</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold">{mockPlatformStats.totalHosts}</div>
-              <div className="text-sm text-muted-foreground mt-1">Total hosts</div>
-              
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div>
-                  <div className="text-xl font-semibold">{mockPlatformStats.activeHosts}</div>
-                  <div className="text-xs text-muted-foreground">Active hosts</div>
-                </div>
-                <div>
-                  <div className="text-xl font-semibold flex items-center">
-                    {mockPlatformStats.recentHostsGrowth}%
-                    <TrendingUp className="h-4 w-4 ml-1 text-green-500" />
-                  </div>
-                  <div className="text-xs text-muted-foreground">Growth (30d)</div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div>
-                  <div className="text-xl font-semibold">{mockPlatformStats.totalNetworks}</div>
-                  <div className="text-xs text-muted-foreground">Total networks</div>
-                </div>
-                <div>
-                  <div className="text-xl font-semibold">{mockPlatformStats.activeNetworks}</div>
-                  <div className="text-xs text-muted-foreground">Active networks</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Wallet className="h-5 w-5" />
-                Platform Revenue
-              </CardTitle>
-              <CardDescription>Financial statistics</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold">${mockPlatformStats.totalRevenue}</div>
-              <div className="text-sm text-muted-foreground mt-1">Total transaction volume</div>
-              
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div>
-                  <div className="text-xl font-semibold">${platformRevenue}</div>
-                  <div className="text-xs text-muted-foreground">Platform revenue</div>
-                </div>
-                <div>
-                  <div className="text-xl font-semibold flex items-center">
-                    {mockPlatformStats.recentRevenueGrowth}%
-                    <TrendingUp className="h-4 w-4 ml-1 text-green-500" />
-                  </div>
-                  <div className="text-xs text-muted-foreground">Growth (30d)</div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div>
-                  <div className="text-xl font-semibold">{mockPlatformStats.activeSessions}</div>
-                  <div className="text-xs text-muted-foreground">Active sessions</div>
-                </div>
-                <div>
-                  <div className="text-xl font-semibold">{platformFee}%</div>
-                  <div className="text-xs text-muted-foreground">Platform fee</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Platform Settings
-              </CardTitle>
-              <CardDescription>Adjust platform configuration</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Platform Fee (%)</label>
-                  <div className="flex gap-2">
-                    <Input 
-                      type="number" 
-                      value={platformFee} 
-                      onChange={(e) => setPlatformFee(parseInt(e.target.value))}
-                      min="0" 
-                      max="100"
-                      className="w-20"
-                    />
-                    <Button 
-                      onClick={() => handleUpdatePlatformFee(platformFee)}
-                    >
-                      Update
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">Percentage fee on all transactions</p>
-                </div>
-                
-                <div>
-                  <Button 
-                    variant="outline"
-                    onClick={() => toast.info("Feature coming soon!")}
-                  >
-                    Manage Payment Methods
-                  </Button>
-                </div>
-                
-                <div>
-                  <Button 
-                    variant="outline"
-                    onClick={() => toast.info("Feature coming soon!")}
-                  >
-                    System Maintenance
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <Tabs defaultValue="hosts" className="w-full">
-          <TabsList className="mb-6 grid w-full grid-cols-2">
-            <TabsTrigger value="hosts">Host Management</TabsTrigger>
-            <TabsTrigger value="transactions">Transaction History</TabsTrigger>
-          </TabsList>
+    <div className="flex h-screen bg-gray-50">
+      <DashboardSidebar
+        currentView={currentView}
+        setCurrentView={setCurrentView}
+        globalMode={globalMode}
+        setGlobalMode={handleModeSwitch}
+      />
 
-          <TabsContent value="hosts">
-            <Card>
-              <CardHeader>
-                <CardTitle>Registered Hosts</CardTitle>
-                <CardDescription>Manage platform hosts and their networks</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Host Name</TableHead>
-                      <TableHead>Wallet Address</TableHead>
-                      <TableHead>Networks</TableHead>
-                      <TableHead>Earnings</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {hosts.map((host) => (
-                      <TableRow key={host.id}>
-                        <TableCell className="flex items-center gap-2">
-                          <User className="h-4 w-4" />
-                          {host.name}
-                        </TableCell>
-                        <TableCell>{host.wallet}</TableCell>
-                        <TableCell>{host.networks}</TableCell>
-                        <TableCell>${host.totalEarnings}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <span className={`w-3 h-3 rounded-full mr-2 ${host.status === "active" ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                            {host.status === "active" ? 'Active' : 'Inactive'}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button 
-                              variant={host.status === "active" ? "destructive" : "default"}
-                              size="sm"
-                              onClick={() => handleToggleHostStatus(host.id)}
-                            >
-                              {host.status === "active" ? 'Deactivate' : 'Activate'}
-                            </Button>
-                            <Button 
-                              variant="outline"
-                              size="sm"
-                              onClick={() => toast.info("Feature coming soon!")}
-                            >
-                              View Details
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <DashboardHeader
+          isLive={isLive}
+          setIsLive={setIsLive}
+          globalMode={globalMode}
+          selectedNetworkId={selectedNetworkId}
+          networks={networks}
+          setSelectedNetworkId={setSelectedNetworkId}
+          loadingNetworks={loadingNetworks}
+        />
 
-          <TabsContent value="transactions">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Transactions</CardTitle>
-                <CardDescription>Platform payment history</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>User</TableHead>
-                      <TableHead>Network</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Platform Fee</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockTransactions.map((tx) => (
-                      <TableRow key={tx.id}>
-                        <TableCell>{tx.date}</TableCell>
-                        <TableCell>{tx.user}</TableCell>
-                        <TableCell>{tx.network}</TableCell>
-                        <TableCell>${tx.amount}</TableCell>
-                        <TableCell>${tx.platformFee}</TableCell>
-                      </TableRow>
-                    ))}
-                    <TableRow className="font-bold">
-                      <TableCell colSpan={3}>Total</TableCell>
-                      <TableCell>
-                        ${mockTransactions.reduce((sum, tx) => sum + parseFloat(tx.amount), 0).toFixed(2)}
-                      </TableCell>
-                      <TableCell>${platformRevenue}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        <main className="flex-1 overflow-y-auto p-6">
+          {networksError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-red-800">Failed to load networks: {networksError.message}</p>
+              <button
+                onClick={() => refetchNetworks()}
+                className="mt-2 text-red-600 hover:text-red-800 underline"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
+          {!globalMode && !selectedNetworkId && (
+            <NetworkSelector
+              networks={networks}
+              onSelectNetwork={setSelectedNetworkId}
+              loading={loadingNetworks}
+              onRefresh={() => refetchNetworks()}
+            />
+          )}
+
+          {(globalMode || selectedNetworkId) && (
+            <>
+              {currentView === "overview" && (
+                <OverviewPage
+                  isLive={isLive}
+                  networkId={selectedNetworkId}
+                  globalMode={globalMode}
+                />
+              )}
+              {currentView === "users" && <ActiveUsers networkId={selectedNetworkId} globalMode={globalMode} />}
+              {currentView === "performance" && <PerformanceCharts networkId={selectedNetworkId} globalMode={globalMode} />}
+              {currentView === "analytics" && <LiveMetrics networkId={selectedNetworkId} globalMode={globalMode} isLive={true} />}
+              {currentView === "reports" && <ReportsPage networkId={selectedNetworkId} />}
+              {currentView === "alerts" && <AlertsPage globalMode={globalMode} networkId={selectedNetworkId} />}
+            </>
+          )}
+        </main>
       </div>
-    </Layout>
+    </div>
+  );
+}
+
+function NetworkSelector({
+  networks,
+  onSelectNetwork,
+  loading,
+  onRefresh,
+}: {
+  networks: INetworkConfig[];
+  onSelectNetwork: (networkId: string) => void;
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading networks...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Select a Network</h1>
+        <p className="text-gray-600">Choose a network to monitor and manage</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {networks.map((network, index) => (
+          <div key={index}>
+            <NetworkCard
+              network={network}
+              onSelect={() => onSelectNetwork(network.networkId)}
+            />
+          </div>
+        ))}
+      </div>
+
+      {networks.length === 0 && (
+        <div className="text-center py-12">
+          <Wifi className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No networks found</h3>
+          <p className="text-gray-500 mb-6">No networks are currently available.</p>
+          <button
+            onClick={onRefresh}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NetworkCard({ network, onSelect }: { network: INetworkConfig; onSelect: () => void }) {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-green-100 text-green-800";
+      case "maintenance":
+        return "bg-yellow-100 text-yellow-800";
+      case "offline":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusIcon = (status: string): string => {
+    switch (status) {
+      case "active":
+        return "🟢";
+      case "maintenance":
+        return "🟡";
+      case "offline":
+        return "🔴";
+      default:
+        return "⚪";
+    }
+  };
+
+  return (
+    <div
+      className="bg-white rounded-xl shadow-sm border hover:shadow-md hover:border-blue-200 transition-all cursor-pointer p-6"
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+            <Wifi className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-900">{network.ssid}</h3>
+            <p className="text-sm text-gray-500">
+              {network?.location?.city || "Unknown"}, {network?.location?.area || "Unknown"}
+            </p>
+          </div>
+        </div>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(network.status)}`}>
+          <span className="mr-1">{getStatusIcon(network?.status)}</span>
+          {network?.status}
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-500">Network ID</span>
+          <span className="font-mono text-sm text-gray-600">{network.networkId.slice(0, 8)}...</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-500">Price</span>
+          <span className="font-medium text-gray-900">{network.price} USDT/day</span>
+        </div>
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-gray-100">
+        <button
+          onClick={onSelect}
+          className="w-full bg-blue-50 text-blue-700 hover:bg-blue-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          Select Network
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface OverviewPageProps {
+  isLive: boolean;
+  networkId: string | null;
+  globalMode: boolean;
+}
+
+function OverviewPage({ isLive, networkId, globalMode }: OverviewPageProps) {
+  const { useDashboard: useGlobalDashboard } = useAdminQueries();
+  const { useNetworkDashboard } = useNetworkQueries(networkId || "");
+
+  const dashboardQuery = globalMode ? useGlobalDashboard() : useNetworkDashboard();
+  const { data, isLoading, error } = dashboardQuery;
+  const defaultDashboardData: DashboardData = {
+    overview: {
+      activeUsers: 0,
+      totalSessions: 0,
+      systemHealth: {
+        cpu: 0,
+        memory: 0,
+        temperature: 0,
+        diskUsage: 0,
+      },
+    },
+    performance: {
+      averageSpeed: {
+        download: 0,
+        upload: 0,
+      },
+    },
+    traffic: {
+      totalDataTransfer: {
+        downloadGB: 0,
+        uploadGB: 0,
+      },
+    },
+  };
+
+  const dashboardData: DashboardData =
+    data && typeof data === "object" &&
+    "overview" in data &&
+    "performance" in data &&
+    "traffic" in data
+      ? (data as DashboardData)
+      : defaultDashboardData;
+
+  useEffect(() => {
+    if (isLive) {
+      const interval = setInterval(() => {
+        dashboardQuery.refetch();
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isLive, dashboardQuery]);
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-500">Failed to load dashboard data: {error.message}</p>
+        <button
+          onClick={() => dashboardQuery.refetch()}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  const activeUsers = dashboardData?.overview?.activeUsers || 0;
+  const totalDataGB =
+    (dashboardData?.traffic?.totalDataTransfer?.downloadGB || 0) +
+    (dashboardData?.traffic?.totalDataTransfer?.uploadGB || 0);
+
+  return (
+    <div className="space-y-6">
+      {process.env.NODE_ENV === "development" && (
+        <div className="bg-gray-100 p-4 rounded text-xs">
+          <pre>{JSON.stringify(dashboardData, null, 2)}</pre>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard
+          title="Active Users"
+          value={activeUsers}
+          icon={Users}
+          color="blue"
+          trend="+12%"
+        />
+        <MetricCard
+          title="Total Sessions"
+          value={dashboardData?.overview?.totalSessions || 0}
+          icon={Activity}
+          color="green"
+          trend="+5%"
+        />
+        <MetricCard
+          title="Avg Download"
+          value={`${(dashboardData?.performance?.averageSpeed?.download || 0).toFixed(1)} Mbps`}
+          icon={Download}
+          color="purple"
+          trend="+8%"
+        />
+        <MetricCard
+          title="Data Transfer"
+          value={`${totalDataGB.toFixed(1)} GB`}
+          icon={TrendingUp}
+          color="orange"
+          trend="+15%"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <SystemHealthCard data={dashboardData?.overview?.systemHealth} />
+        </div>
+        {/* <div>
+          <RecentActivityCard />
+        </div> */}
+      </div>
+    </div>
+  );
+}
+
+interface MetricCardProps {
+  title: string;
+  value: string | number;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  color: "blue" | "green" | "purple" | "orange";
+  trend?: string;
+}
+
+function MetricCard({ title, value, icon: Icon, color, trend }: MetricCardProps) {
+  const colorClasses = {
+    blue: "text-blue-600 bg-blue-50",
+    green: "text-green-600 bg-green-50",
+    purple: "text-purple-600 bg-purple-50",
+    orange: "text-orange-600 bg-orange-50",
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-gray-600 mb-1">{title}</p>
+          <p className="text-lg font-bold text-gray-900">{value}</p>
+          {/* {trend && (
+            <p className="text-sm text-green-600 mt-1">
+              {trend} from last hour
+            </p>
+          )} */}
+        </div>
+        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
+          <Icon className="w-6 h-6" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface SystemHealthData {
+  cpu?: number;
+  memory?: number;
+  temperature?: number;
+  diskUsage?: number;
+}
+
+function SystemHealthCard({ data }: { data?: SystemHealthData }) {
+  const healthMetrics = [
+    { label: "CPU Usage", value: data?.cpu || 0, max: 100, color: "bg-blue-500" },
+    { label: "Memory", value: data?.memory || 0, max: 100, color: "bg-green-500" },
+    { label: "Temperature", value: data?.temperature || 0, max: 80, color: "bg-orange-500" },
+    { label: "Disk Usage", value: data?.diskUsage || 0, max: 100, color: "bg-purple-500" },
+  ];
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">System Health</h3>
+      <div className="space-y-4">
+        {healthMetrics.map((metric) => (
+          <div key={metric.label}>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="text-gray-600">{metric.label}</span>
+              <span className="font-medium">{metric.value}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full ${metric.color} transition-all duration-300`}
+                style={{ width: `${Math.min((metric.value / metric.max) * 100, 100)}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
   );
 }

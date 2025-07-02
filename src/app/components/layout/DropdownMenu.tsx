@@ -8,17 +8,17 @@ import { LayoutDashboard, LogOut, UserPlus, RefreshCw, ChevronRight } from 'luci
 type DropdownMenuProps = {
   dropdownOpen: boolean
   setDropdownOpen: (value: boolean) => void
+  openAccountModal?: () => void
+  openChainModal?: () => void
   userType: string
-  onDisconnect: () => void
-  onSwitchAccount: () => void
 }
 
 export default function DropdownMenu({
   dropdownOpen,
   setDropdownOpen,
   userType,
-  onDisconnect,
-  onSwitchAccount
+  openAccountModal,
+  openChainModal
 }: DropdownMenuProps) {
   const router = useRouter()
 
@@ -29,25 +29,25 @@ export default function DropdownMenu({
 
   const dropdownVariants = {
     hidden: { opacity: 0, y: -10, scale: 0.95 },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
-      scale: 1, 
-      transition: { 
-        duration: 0.2, 
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.2,
         ease: [0.4, 0, 0.2, 1],
         when: "beforeChildren",
         staggerChildren: 0.05
-      } 
+      }
     },
-    exit: { 
-      opacity: 0, 
-      y: -10, 
-      scale: 0.95, 
-      transition: { 
+    exit: {
+      opacity: 0,
+      y: -10,
+      scale: 0.95,
+      transition: {
         duration: 0.15,
         ease: [0.4, 0, 1, 1]
-      } 
+      }
     },
   }
 
@@ -77,7 +77,7 @@ export default function DropdownMenu({
         >
           <div className="w-full py-1 relative flex flex-col items-start">
             {/* Dashboard */}
-            <motion.div 
+            <motion.div
               variants={itemVariants}
               className="w-full border-b border-white/10"
               role="menuitem"
@@ -97,7 +97,7 @@ export default function DropdownMenu({
             </motion.div>
 
             {/* Switch Account */}
-            <motion.div 
+            <motion.div
               variants={itemVariants}
               className="w-full border-b border-white/10"
               role="menuitem"
@@ -108,7 +108,7 @@ export default function DropdownMenu({
                   hover:bg-white/10 transition-colors"
                 onClick={() => {
                   setDropdownOpen(false)
-                  onSwitchAccount()
+                  openChainModal?.()
                 }}
               >
                 <div className="flex items-center gap-3">
@@ -121,7 +121,7 @@ export default function DropdownMenu({
 
             {/* Become a Host (only for guests) */}
             {userType === 'guest' && (
-              <motion.div 
+              <motion.div
                 variants={itemVariants}
                 className="w-full border-b border-white/10"
                 role="menuitem"
@@ -142,7 +142,7 @@ export default function DropdownMenu({
             )}
 
             {/* Disconnect */}
-            <motion.div 
+            <motion.div
               variants={itemVariants}
               className="w-full"
               role="menuitem"
@@ -153,7 +153,7 @@ export default function DropdownMenu({
                   hover:bg-red-500/20 hover:text-red-100 transition-colors"
                 onClick={() => {
                   setDropdownOpen(false)
-                  onDisconnect()
+                  openAccountModal?.()
                 }}
               >
                 <div className="flex items-center gap-3">
