@@ -10,14 +10,29 @@ import { INetworkConfig } from "@/app/server/models/NetworkConfig.model";
 import ReportsPage from "./ReportsPage";
 import AlertsPage from "./AlertsPage";
 import PerformanceCharts from "./PerformanceCharts";
-import LiveMetrics from "./LiveMetrics";
 import SessionAnalytics from "./SessionAnalytics";
+import OverviewPage from "./OverviewPage";
+
+
+type HourlyTrend = {
+  hour: number;
+  date: string;
+  activeUsers: number;
+  cpu: number;
+  memory: number;
+  temperature: number;
+};
 
 // Simplified DashboardData type
-type DashboardData = {
+export type DashboardData = {
   overview: {
-    activeUsers: number;
+    totalActiveUsers: number;
     totalSessions: number;
+    activeSessions?: number;
+    completedSessions?: number;
+    averageDuration?: number;
+    totalSpeedTests?: number;
+    averageSessionDuration?: number;
     systemHealth: {
       cpu: number;
       memory: number;
@@ -36,8 +51,31 @@ type DashboardData = {
       downloadGB: number;
       uploadGB: number;
     };
+    totalUsers: number;
+    deviceBreakdown: {
+      mobile: number;
+      desktop: number;
+      tablet: number;
+      unknown: number;
+    };
   };
-};
+  trends: {
+    hourly: HourlyTrend[];
+  };
+  networkBreakdown?: Array<{
+    networkId: string
+    sessions: number
+    avgDuration: number
+    completionRate: number
+  }>;
+  metadata: {
+    lastUpdated: string;
+  };
+}
+
+
+type NetworksDataType = { networks: INetworkConfig[] } | undefined;
+
 
 export default function AdminDashboard() {
   const [currentView, setCurrentView] = useState<string>("overview");
@@ -54,7 +92,8 @@ export default function AdminDashboard() {
   } = useNetworks();
 
 
-  const networks: INetworkConfig[] = Array.isArray(networksData) ? networksData : [];
+  const typedNetworksData = networksData as NetworksDataType;
+  const networks = typedNetworksData?.networks || [];
 
 
   const handleModeSwitch = (isGlobal: boolean) => {
@@ -115,9 +154,9 @@ export default function AdminDashboard() {
                   globalMode={globalMode}
                 />
               )}
-              {currentView === "lanalytics" && <LiveMetrics networkId={selectedNetworkId} globalMode={globalMode} isLive={true} />}
+              {/* {currentView === "lanalytics" && <LiveMetrics networkId={selectedNetworkId} globalMode={globalMode} isLive={true} />} */}
               {currentView === "sanalytics" && <SessionAnalytics networkId={selectedNetworkId} globalMode={globalMode} isLive={true} />}
-              {currentView === "performance" && <PerformanceCharts networkId={selectedNetworkId} globalMode={globalMode} />}
+              {/* {currentView === "performance" && <PerformanceCharts networkId={selectedNetworkId} globalMode={globalMode} />} */}
               {currentView === "reports" && <ReportsPage networkId={selectedNetworkId} globalMode={globalMode} />}
               {currentView === "alerts" && <AlertsPage globalMode={globalMode} networkId={selectedNetworkId} />}
             </>
@@ -254,216 +293,6 @@ function NetworkCard({ network, onSelect }: { network: INetworkConfig; onSelect:
           Select Network
         </button>
       </div>
-    </div>
-  );
-}
-
-interface OverviewPageProps {
-  isLive: boolean;
-  networkId: string | null;
-  globalMode: boolean;
-}
-
-function OverviewPage({ isLive, networkId, globalMode }: OverviewPageProps) {
-  const { useDashboard: useGlobalDashboard } = useAdminQueries();
-  const { useNetworkDashboard } = useNetworkQueries(networkId || "");
-
-  const dashboardQuery = globalMode ? useGlobalDashboard() : useNetworkDashboard();
-  const { data, isLoading, error } = dashboardQuery;
-  const defaultDashboardData: DashboardData = {
-    overview: {
-      activeUsers: 0,
-      totalSessions: 0,
-      systemHealth: {
-        cpu: 0,
-        memory: 0,
-        temperature: 0,
-        diskUsage: 0,
-      },
-    },
-    performance: {
-      averageSpeed: {
-        download: 0,
-        upload: 0,
-      },
-    },
-    traffic: {
-      totalDataTransfer: {
-        downloadGB: 0,
-        uploadGB: 0,
-      },
-    },
-  };
-
-  const dashboardData: DashboardData =
-    data && typeof data === "object" &&
-      "overview" in data &&
-      "performance" in data &&
-      "traffic" in data
-      ? (data as DashboardData)
-      : defaultDashboardData;
-
-  useEffect(() => {
-    if (isLive) {
-      const interval = setInterval(() => {
-        dashboardQuery.refetch();
-      }, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [isLive, dashboardQuery]);
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-red-500">Failed to load dashboard data: {error.message}</p>
-        <button
-          onClick={() => dashboardQuery.refetch()}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  const activeUsers = dashboardData?.overview?.activeUsers || 0;
-  const totalDataGB =
-    (dashboardData?.traffic?.totalDataTransfer?.downloadGB || 0) +
-    (dashboardData?.traffic?.totalDataTransfer?.uploadGB || 0);
-
-  return (
-    <div className="space-y-6">
-      {/* {process.env.NODE_ENV === "development" && (
-        <div className="bg-blue-900 p-4 rounded text-xs text-white">
-          <pre>{JSON.stringify(dashboardData, null, 2)}</pre>
-        </div>
-      )} */}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          title="Active Users"
-          value={activeUsers}
-          icon={Users}
-          color="blue"
-          trend="+12%"
-        />
-        <MetricCard
-          title="Total Sessions"
-          value={dashboardData?.overview?.totalSessions || 0}
-          icon={Activity}
-          color="green"
-          trend="+5%"
-        />
-        <MetricCard
-          title="Avg Download"
-          value={`${(dashboardData?.performance?.averageSpeed?.download || 0).toFixed(1)} Mbps`}
-          icon={Download}
-          color="purple"
-          trend="+8%"
-        />
-        <MetricCard
-          title="Data Transfer"
-          value={`${totalDataGB.toFixed(1)} GB`}
-          icon={TrendingUp}
-          color="orange"
-          trend="+15%"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <SystemHealthCard data={dashboardData?.overview?.systemHealth} />
-        </div>
-        {/* <div>
-          <RecentActivityCard />
-        </div> */}
-      </div>
-    </div>
-  );
-}
-
-interface MetricCardProps {
-  title: string;
-  value: string | number;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  color: "blue" | "green" | "purple" | "orange";
-  trend?: string;
-}
-
-function MetricCard({ title, value, icon: Icon, color, trend }: MetricCardProps) {
-  const colorClasses = {
-    blue: "text-blue-600 bg-blue-50",
-    green: "text-green-600 bg-green-50",
-    purple: "text-purple-600 bg-purple-50",
-    orange: "text-orange-600 bg-orange-50",
-  };
-
-  return (
-    <div className="bg-blue-900 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-300 mb-1">{title}</p>
-          <p className="text-lg font-bold text-white">{value}</p>
-          {/* {trend && (
-            <p className="text-sm text-green-600 mt-1">
-              {trend} from last hour
-            </p>
-          )} */}
-        </div>
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-          <Icon className="w-6 h-6" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface SystemHealthData {
-  cpu?: number;
-  memory?: number;
-  temperature?: number;
-  diskUsage?: number;
-}
-
-function SystemHealthCard({ data }: { data?: SystemHealthData }) {
-  const healthMetrics = [
-    { label: "CPU Usage", value: data?.cpu || 0, max: 100, color: "bg-blue-500" },
-    { label: "Memory", value: data?.memory || 0, max: 100, color: "bg-green-500" },
-    { label: "Temperature", value: data?.temperature || 0, max: 80, color: "bg-orange-500" },
-    { label: "Disk Usage", value: data?.diskUsage || 0, max: 100, color: "bg-purple-500" },
-  ];
-
-  return (
-    <div className="bg-blue-900 rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">System Health</h3>
-      <div className="space-y-4">
-        {healthMetrics.map((metric) => (
-          <div key={metric.label}>
-            <div className="flex justify-between text-sm mb-1">
-              <span className="text-gray-300">{metric.label}</span>
-              <span className="font-medium text-gray-300">{metric.value}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className={`h-2 rounded-full ${metric.color} transition-all duration-300`}
-                style={{ width: `${Math.min((metric.value / metric.max) * 100, 100)}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function LoadingSpinner() {
-  return (
-    <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
     </div>
   );
 }

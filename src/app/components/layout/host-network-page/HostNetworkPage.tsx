@@ -18,7 +18,6 @@ import {
   Mail,
   Cpu,
 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
 import { Button } from "../../ui/button";
 import { Alert, AlertTitle, AlertDescription } from "../../ui/alert";
 import {
@@ -32,16 +31,8 @@ import {
 import { Input } from "../../ui/input";
 import { Textarea } from "../../ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
-import {
-  createPublicClient,
-  http,
-} from "viem";
-import { loadContract, uploadImageToIPFS, uploadToIPFS } from "../../web3/contants/web3Funcs";
-import { network_Abi, zaanetNetwork_CA } from "../../web3/contants/projectData";
-import { ethers } from "ethers";
-import { arbitrumSepolia } from "viem/chains";
 import { useAccount } from "wagmi";
-import api from "@/lib/axios";
+import { useHostNetworkStore } from "@/app/store/HostNetworkStore";
 
 // Zod schema to prepare basic network data
 const hostSchema = z.object({
@@ -79,15 +70,6 @@ const hostSchema = z.object({
   }),
 });
 
-// Chain configuration
-const chain = arbitrumSepolia;
-
-// Public client for chain queries
-export const publicClient = createPublicClient({
-  chain,
-  transport: http(),
-});
-
 interface HostForm {
   ssid: string;
   price: number;
@@ -119,17 +101,19 @@ interface HostForm {
 export default function HostNetworkPage() {
   const { isConnected } = useAccount();
   const [submitted, setSubmitted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [geoError, setGeoError] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
+
+  // Use the Zustand store
+  const { hostNetwork, isHostingNetwork, setLoading } = useHostNetworkStore();
 
   const form = useForm<HostForm>({
     resolver: zodResolver(hostSchema),
     mode: "onTouched",
     defaultValues: {
       ssid: "",
-      price: 1,
+      price: 0.2,
       description: "",
       image: undefined,
       location: {
@@ -156,180 +140,15 @@ export default function HostNetworkPage() {
     setIsClient(true);
   }, []);
 
-  // Function to handle network registration
-async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) => void) {
-  try {
-    if (!isConnected) {
-      toast({
-        title: "Error",
-        description: "Smart account is not connected.",
-        variant: "destructive",
-      });
-      onComplete(false);
-      return;
-    }
-
-    // Check if wallet is on Arbitrum Sepolia
-    if (chain?.id !== arbitrumSepolia.id) {
-      toast({
-        title: "Error",
-        description: "Please switch to Arbitrum Sepolia network in your wallet.",
-        variant: "destructive",
-      });
-      onComplete(false);
-      return;
-    }
-
-    let imageCID = "";
-    if (data.image) {
-      try {
-        imageCID = await uploadImageToIPFS(data.image);
-      } catch (ipfsError) {
-        console.error('IPFS upload error:', ipfsError);
-        throw new Error('Failed to upload image to IPFS');
-      }
-    }
-
-    const { location } = data;
-    if (
-      !location.city ||
-      !location.country ||
-      !location.region ||
-      !location.area ||
-      !location.lat ||
-      !location.lng
-    ) {
-      toast({
-        title: "Error",
-        description: "Please provide complete location details.",
-        variant: "destructive",
-      });
-      onComplete(false);
-      return;
-    }
-
-    const priceString = Number(data.price).toFixed(18);
-    const amountToSend = ethers.parseUnits(priceString, 18);
-
-    const metadata = {
-      ssid: data.ssid,
-      price: data.price,
-      description: data.description,
-      image: imageCID,
-      ratingCount: 0,
-      location: {
-        country: location.country,
-        region: location.region,
-        city: location.city,
-        area: location.area,
-        coordinates: { latitude: location.lat, longitude: location.lng },
-      },
-      contact: data.contact,
-      hardware: data.hardware,
-      status: "offline",
-      createdAt: new Date().toISOString(),
-      lastSeen: new Date().toISOString(),
-    };
-
-    let mongoDataId;
-    try {
-      const response = await api.post("/host-network", metadata, {
-        timeout: 10000,
-      });
-      if (response.status !== 200 && response.status !== 201) {
-        throw new Error("Failed to save network configuration to database");
-      }
-      mongoDataId = (response.data as { mongoDataId: string }).mongoDataId;
-      if (!mongoDataId) {
-        throw new Error("Invalid response: mongoDataId not found");
-      }
-    } catch (dbError: any) {
-      console.error('MongoDB save error:', dbError);
-      let errorMessage = "Failed to save network configuration to database";
-      if (dbError.code === "ECONNABORTED") {
-        errorMessage = "Request to save network timed out. Please check server status.";
-      }
-      throw new Error(errorMessage);
-    }
-
-    let networkContract;
-    try {
-      networkContract = await loadContract({
-        contractAddress: zaanetNetwork_CA,
-        contractABI: network_Abi,
-        withSigner: true,
-      });
-      if (!networkContract) {
-        throw new Error("Failed to initialize network contract");
-      }
-    } catch (contractError) {
-      console.error('Contract load error:', contractError);
-      // Rollback MongoDB document
-      try {
-        await api.delete(`/host-network/${mongoDataId}/delete-failed-network`);
-        console.log(`Rolled back MongoDB document with _id: ${mongoDataId}`);
-      } catch (rollbackError) {
-        console.error('Rollback failed:', rollbackError);
-      }
-      throw new Error('Failed to load network contract. Please check wallet connection.');
-    }
-
-    try {
-      const tx = await networkContract.registerNetwork(amountToSend, mongoDataId, true, {
-        gasLimit: 300000,
-      });
-      const receipt = await tx.wait();
-      if (!receipt || receipt.status !== 1) {
-        throw new Error("Transaction failed or was reverted");
-      }
-    } catch (txError: any) {
-      console.error('Blockchain transaction error:', txError);
-      // Rollback MongoDB document
-      try {
-        await api.delete(`/host-network/${mongoDataId}/delete-failed-network`);
-        console.log(`Rolled back MongoDB document with _id: ${mongoDataId}`);
-      } catch (rollbackError) {
-        console.error('Rollback failed:', rollbackError);
-      }
-      let errorMessage = "Blockchain transaction failed";
-      if (txError.code === "INSUFFICIENT_FUNDS") {
-        errorMessage = "Insufficient funds for transaction. Please add funds to your wallet.";
-      } else if (txError.code === "ACTION_REJECTED") {
-        errorMessage = "Transaction rejected by wallet. Please approve the transaction.";
-      } else if (txError.reason) {
-        errorMessage = `Transaction reverted: ${txError.reason}`;
-      }
-      throw new Error(errorMessage);
-    }
-
-    toast({
-      title: "Network Listed!",
-      description: "Your WiFi network is now hosted and available to users.",
-    });
-    onComplete(true);
-  } catch (error: unknown) {
-    console.error('Transaction error:', error);
-    let errorMessage = "Failed to list your network. Please try again.";
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-    toast({
-      title: "Error",
-      description: errorMessage,
-      variant: "destructive",
-    });
-    onComplete(false);
-  }
-}
   async function onSubmit(data: HostForm) {
     setShowConfirm(true);
   }
 
   function confirmSubmit() {
-    setIsLoading(true);
+    setLoading(true);
     const data = form.getValues();
-    handleHostNetwork(data, (success) => {
-      setIsLoading(false);
+    hostNetwork(data, isConnected, (success) => {
+      setLoading(false);
       setShowConfirm(false);
       if (success) {
         setSubmitted(true);
@@ -443,7 +262,7 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
               variant="outline"
               className="w-full text-blue-100 border-blue-500 hover:bg-gray-900"
               onClick={() => setShowConfirm(false)}
-              disabled={isLoading}
+              disabled={isHostingNetwork}
             >
               Edit Details
             </Button>
@@ -451,9 +270,9 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
               variant="default"
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               onClick={confirmSubmit}
-              disabled={isLoading}
+              disabled={isHostingNetwork}
             >
-              {isLoading ? (
+              {isHostingNetwork ? (
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>Listing Network...</span>
@@ -938,9 +757,9 @@ async function handleHostNetwork(data: HostForm, onComplete: (success: boolean) 
                 type="submit"
                 variant="default"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                disabled={isLoading || !isConnected}
+                disabled={isHostingNetwork || !isConnected}
               >
-                {isLoading ? (
+                {isHostingNetwork ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     <span>Preparing...</span>

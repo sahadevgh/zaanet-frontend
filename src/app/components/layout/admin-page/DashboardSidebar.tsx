@@ -56,9 +56,9 @@ interface AlertsData {
 
 const navigation = [
   { name: 'Overview', id: 'overview', icon: LayoutDashboard },
-  { name: 'Live Analytics', id: 'lanalytics', icon: BarChart3 },
+  // { name: 'Live Analytics', id: 'lanalytics', icon: BarChart3 },
   { name: 'Session Analytics', id: 'sanalytics', icon: BarChart3 },
-  { name: 'Performance', id: 'performance', icon: Activity },
+  // { name: 'Performance', id: 'performance', icon: Activity },
   { name: 'Reports', id: 'reports', icon: FileText },
   { name: 'Alerts', id: 'alerts', icon: AlertTriangle },
 ]

@@ -1,57 +1,70 @@
-import { Wifi, Globe, Shield, Coins } from 'lucide-react'
+import { DollarSign, Zap, Shield, Settings } from 'lucide-react'
+import { Card, CardContent } from '../../ui/card'
 
 const features = [
   {
-    icon: <Wifi className="text-zaanet-purple w-6 h-6" />,
-    bg: 'bg-zaanet-purple-light',
-    title: 'List Your WiFi',
-    description: 'Share your internet connection with those who need it most while keeping your network secure.',
+    icon: DollarSign,
+    title: 'Earn from Your WiFi',
+    description: 'Transform your internet connection into a steady income stream. Set your rates and earn automatically from every guest connection.',
+    color: 'text-green-500'
   },
   {
-    icon: <Globe className="text-amber-600 w-6 h-6" />,
-    bg: 'bg-zaanet-yellow',
-    title: 'Connect Easily',
-    description: 'Find available networks nearby, connect with a few taps, and get online instantly.',
+    icon: Zap,
+    title: 'Fast & Secure Guest Access',
+    description: 'Guests connect instantly with mobile money or card payments. No complicated setups or long registration processes.',
+    color: 'text-blue-500'
   },
   {
-    icon: <Shield className="text-green-600 w-6 h-6" />,
-    bg: 'bg-zaanet-green',
-    title: 'Secure & Private',
-    description: 'All connections are secured through blockchain technology, ensuring privacy for hosts and users.',
+    icon: Shield,
+    title: 'Blockchain-Powered Transparency',
+    description: 'All transactions are recorded on the blockchain for complete transparency and trust between hosts and guests.',
+    color: 'text-purple-500'
   },
   {
-    icon: <Coins className="text-orange-600 w-6 h-6" />,
-    bg: 'bg-zaanet-peach',
-    title: 'Earn Crypto',
-    description: 'Hosts earn USDT when users connect to their WiFi, with instant payouts to your wallet.',
-  },
+    icon: Settings,
+    title: 'Simple Plug-and-Play Setup',
+    description: 'Get started in minutes with our easy setup process. No technical expertise required - just plug in and start earning.',
+    color: 'text-[#00BFA6]'
+  }
 ]
 
-const FeaturesSection = () => {
+export function FeaturesSection() {
   return (
     <section className="py-20">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl text-blue-100 font-bold font-heading mb-4">How ZaaNet Works</h2>
-          <p className="text-blue-200 max-w-xl mx-auto">Share your WiFi. Earn crypto. Help your community get connected.</p>
+          <h2 className="text-3xl md:text-5xl font-bold text-cyan-500 mb-6">
+            Why Choose ZaaNet?
+          </h2>
+          <p className="text-xl text-blue-200 max-w-3xl mx-auto">
+            We're revolutionizing internet access with cutting-edge technology 
+            that benefits both hosts and guests in the digital economy.
+          </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {features.map((feature, idx) => (
-            <div
-              key={idx}
-              className="bg-blue-900 p-6 rounded-lg shadow-sm border border-blue-100 hover:shadow-md transition-shadow"
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {features.map((feature, index) => (
+            <Card 
+              key={index} 
+              className="bg-blue-900 border-2 border-transparent hover:border-blue-600/20 transition-all duration-300 hover:shadow-lg group"
             >
-              <div className={`w-14 h-14 ${feature.bg} rounded-full flex items-center justify-center mb-6`}>
-                {feature.icon}
-              </div>
-              <h3 className="font-heading font-semibold text-lg text-blue-100 mb-3">{feature.title}</h3>
-              <p className="text-white">{feature.description}</p>
-            </div>
+              <CardContent className="p-8 text-center">
+                <div className="mb-6">
+                  <div className="w-16 h-16 mx-auto bg-blue-200 rounded-2xl flex items-center justify-center group-hover:bg-black/40 transition-colors">
+                    <feature.icon className={`h-8 w-8 ${feature.color} group-hover:text-blue-600 transition-colors`} />
+                  </div>
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-4">
+                  {feature.title}
+                </h3>
+                <p className="text-blue-200 leading-relaxed">
+                  {feature.description}
+                </p>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
     </section>
   )
 }
-
-export default FeaturesSection

@@ -244,14 +244,14 @@ export default function DashboardHeader({
                 {globalMode ? 'Global Dashboard' : 
                  selectedNetwork ? selectedNetwork.ssid : 'Network Dashboard'}
               </h1>
-              <p className="text-xs text-gray-300">
+              {/* <p className="text-xs text-gray-300">
                 {globalMode 
                   ? `Monitoring ${networks.length} networks`
                   : selectedNetwork 
                     ? `${selectedNetwork.location} • ${activeUsers} active users`
                     : 'Select a network to monitor'
                 }
-              </p>
+              </p> */}
             </div>
           </div>
 

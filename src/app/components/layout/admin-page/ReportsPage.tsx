@@ -12,16 +12,14 @@ import {
   CheckCircle,
   AlertTriangle,
   BarChart3,
-  Calendar,
-  Clock,
   Globe,
   Network,
   RefreshCw,
-  Filter,
-  Settings,
   Share,
-  Eye,
-  Mail
+  Mail,
+  HardDrive,
+  Activity,
+  Clock
 } from 'lucide-react'
 import { useAdminQueries } from '@/hooks/useAdminQueries'
 import { useNetworkQueries } from '@/hooks/useNetworkQueries'
@@ -31,91 +29,48 @@ interface ReportProps {
   globalMode: boolean
 }
 
-interface ReportData {
-  reportId: string
-  type: 'hourly' | 'daily' | 'weekly' | 'monthly'
-  networkId?: string
-  networkName?: string
-  testInfo: {
-    startTime: string
-    endTime: string
-    duration: string
-    location: string
-    piModel: string
-    reportType: string
-  }
-  summary: {
-    totalSessions: number
-    activeSessions: number
-    completedSessions: number
-    peakConcurrentUsers: number
-    totalSpeedTests: number
-    totalNetworks?: number
-    networksOnline?: number
-  }
-  performance: {
-    averageSpeed: { download: number; upload: number }
-    peakSpeed?: { download: number; upload: number }
-    systemLoad: {
-      averageCPU: number
-      averageMemory: number
-      maxTemperature: number
-      averageDiskUsage?: number
-    }
-    reliability: {
-      sessionSuccessRate: number
-      averageSessionDuration: number
-      disconnectionRate: number
-      systemStability: number
-      uptime?: number
+// Define proper types for the raw data
+interface DashboardData {
+  overview?: {
+    totalActiveUsers?: number
+    totalSessions?: number
+    completedSessions?: number
+    systemHealth?: {
+      cpu?: number
+      memory?: number
+      temperature?: number
+      diskUsage?: number
     }
   }
-  scalabilityTest: {
-    maxConcurrentUsers: number
-    performanceAtScale: Record<string, any>
-    systemStressPoints: string[]
-    networkCapacity?: {
-      current: number
-      maximum: number
-      efficiency: number
+  performance?: {
+    averageSpeed?: {
+      download?: number
+      upload?: number
+    }
+    totalSpeedTests?: number
+  }
+  traffic?: {
+    totalDataTransfer?: {
+      downloadGB?: number
+      uploadGB?: number
+    }
+    totalUsers?: number
+    deviceBreakdown?: {
+      mobile?: number
+      desktop?: number
+      tablet?: number
+      unknown?: number
     }
   }
-  commercialViability: {
-    averageSpeedPerUser: Record<string, any>
-    reliabilityScore: number
-    hardwareUtilization: any
-    costEffectiveness: {
-      hardwareCost: number
-      costPerUser: number
-      costPerGB: number
-      usersSupported: number
-      dataServed: number
-      monthlyOperatingCost?: number
-    }
-  }
-  networkBreakdown?: Array<{
-    networkId: string
-    networkName: string
-    performance: {
-      avgDownload: number
-      avgUpload: number
-      reliability: number
-      users: number
-    }
-    issues: string[]
-  }>
-  recommendations: string[]
-  insights: {
-    performance: string[]
-    efficiency: string[]
-    scalability: string[]
+  networks?: {
+    total?: number
+    online?: number
+    offline?: number
   }
 }
 
 export default function ReportsPage({ networkId, globalMode }: ReportProps) {
-  const [reportType, setReportType] = useState<'hourly' | 'daily' | 'weekly' | 'monthly'>('daily')
-  const [timeRange, setTimeRange] = useState({ start: '', end: '' })
-  const [showFilters, setShowFilters] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
 
   // Use appropriate hooks based on mode
   const adminQueries = useAdminQueries()
@@ -124,135 +79,73 @@ export default function ReportsPage({ networkId, globalMode }: ReportProps) {
   // Generate report mutation
   const exportMutation = adminQueries.useExportData()
 
-  // For reports, we'll use the dashboard data and transform it
-  // In a real app, you'd have a specific report generation endpoint
+  // Get current data
   const reportQuery = globalMode 
     ? adminQueries.useDashboard()
     : networkId 
       ? networkQueries?.useNetworkDashboard()
       : null
 
-  // Use 'any' type for rawData to avoid property access errors, or define a more specific type if available
-  const { data: rawData, isLoading: loading, error, refetch } = (reportQuery as { data: any, isLoading: boolean, error: any, refetch: () => void }) || { 
+  const { data: rawData, isLoading: loading, error, refetch } = reportQuery || { 
     data: null, 
     isLoading: false, 
     error: null, 
     refetch: () => {} 
   }
 
-  // Transform the API data to match our ReportData interface
-  const reportData: ReportData | null = rawData ? {
-    reportId: `RPT-${Date.now()}`,
-    type: reportType,
-    networkId: globalMode ? undefined : (networkId || undefined),
-    networkName: globalMode ? undefined : rawData.networkInfo?.name || rawData.network?.name,
-    testInfo: {
-      startTime: new Date(Date.now() - (reportType === 'hourly' ? 3600000 : 86400000)).toISOString(),
-      endTime: new Date().toISOString(),
-      duration: reportType === 'hourly' ? '1 hour' : '24 hours',
-      location: globalMode ? 'All Locations' : rawData.networkInfo?.location || 'Network Location',
-      piModel: globalMode ? 'Multiple Pi Units' : rawData.systemInfo?.hardware || 'Raspberry Pi',
-      reportType: globalMode ? 'Global Network Analysis' : 'Single Network Performance'
-    },
-    summary: {
-      totalSessions: rawData.sessions?.total || rawData.sessionAnalytics?.total || 0,
-      activeSessions: rawData.sessions?.active || rawData.sessionAnalytics?.active || 0,
-      completedSessions: rawData.sessions?.completed || rawData.sessionAnalytics?.completed || 0,
-      peakConcurrentUsers: rawData.sessions?.peak || rawData.sessionAnalytics?.peak || 0,
-      totalSpeedTests: rawData.speedTests?.total || rawData.totalTests || 0,
-      totalNetworks: globalMode ? rawData.networks?.total : undefined,
-      networksOnline: globalMode ? rawData.networks?.online : undefined
-    },
-    performance: {
-      averageSpeed: {
-        download: rawData.performance?.averageSpeed?.download || rawData.speedTest?.download || 0,
-        upload: rawData.performance?.averageSpeed?.upload || rawData.speedTest?.upload || 0
-      },
-      peakSpeed: rawData.performance?.peakSpeed || {
-        download: (rawData.performance?.averageSpeed?.download || 0) * 1.2,
-        upload: (rawData.performance?.averageSpeed?.upload || 0) * 1.2
-      },
-      systemLoad: {
-        averageCPU: rawData.systemHealth?.cpu || rawData.system?.cpu || 0,
-        averageMemory: rawData.systemHealth?.memory || rawData.system?.memory || 0,
-        maxTemperature: rawData.systemHealth?.temperature || rawData.system?.temperature || 0,
-        averageDiskUsage: rawData.systemHealth?.disk || rawData.system?.disk
-      },
-      reliability: {
-        sessionSuccessRate: rawData.reliability?.successRate || (rawData.sessions?.completed / rawData.sessions?.total * 100) || 0,
-        averageSessionDuration: rawData.sessions?.averageDuration || 0,
-        disconnectionRate: rawData.reliability?.disconnectionRate || 0,
-        systemStability: rawData.systemHealth?.stability || rawData.reliability?.stability || 0,
-        uptime: rawData.systemHealth?.uptime || rawData.uptime
-      }
-    },
-    scalabilityTest: {
-      maxConcurrentUsers: rawData.sessions?.peak || rawData.sessionAnalytics?.peak || 0,
-      performanceAtScale: rawData.scalability?.performanceAtScale || {},
-      systemStressPoints: rawData.scalability?.stressPoints || rawData.issues || [],
-      networkCapacity: rawData.scalability?.capacity || {
-        current: rawData.sessions?.active || 0,
-        maximum: rawData.capacity?.maximum || (rawData.sessions?.active || 0) * 1.5,
-        efficiency: rawData.capacity?.efficiency || 80
-      }
-    },
-    commercialViability: {
-      averageSpeedPerUser: {},
-      reliabilityScore: rawData.reliability?.score || rawData.systemHealth?.stability || 0,
-      hardwareUtilization: rawData.systemHealth || {},
-      costEffectiveness: {
-        hardwareCost: rawData.costAnalysis?.hardware || (globalMode ? 480 : 68),
-        costPerUser: rawData.costAnalysis?.perUser || 0,
-        costPerGB: rawData.costAnalysis?.perGB || 0,
-        usersSupported: rawData.sessions?.total || 0,
-        dataServed: rawData.dataTransfer?.total || 0,
-        monthlyOperatingCost: rawData.costAnalysis?.monthly
-      }
-    },
-    networkBreakdown: globalMode ? rawData.networks?.breakdown : undefined,
-    recommendations: rawData.recommendations || [],
-    insights: {
-      performance: rawData.insights?.performance || [],
-      efficiency: rawData.insights?.efficiency || [],
-      scalability: rawData.insights?.scalability || []
-    }
-  } : null
+  // Type-safe data access
+  const dashboardData = rawData as DashboardData | null
 
   const generateReport = async () => {
+    setIsGenerating(true)
     try {
       await refetch()
     } catch (error) {
       console.error('Failed to generate report:', error)
+    } finally {
+      setIsGenerating(false)
     }
   }
 
-  const downloadReport = (format: 'json' | 'pdf' | 'csv') => {
-  if (!reportData) return
-  
-  switch (format) {
-    case 'json':
+  const downloadReport = (format: 'json' | 'csv') => {
+    if (!dashboardData) return
+    
+    const reportData = {
+      reportId: `RPT-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      networkId: globalMode ? 'ALL' : networkId,
+      type: globalMode ? 'Global Network Report' : 'Network Performance Report',
+      data: dashboardData
+    }
+    
+    if (format === 'json') {
       const dataStr = JSON.stringify(reportData, null, 2)
       const dataBlob = new Blob([dataStr], { type: 'application/json' })
       const url = URL.createObjectURL(dataBlob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `report-${reportData.reportId}-${reportData.type}.json`
+      link.download = `network-report-${reportData.reportId}.json`
       link.click()
       URL.revokeObjectURL(url)
-      break
-      
-    case 'csv':
+    } else if (format === 'csv') {
       const csvData = [
-        ['Metric', 'Value', 'Status'],
-        ['Report Type', reportData.type, ''],
-        ['Peak Concurrent Users', reportData.scalabilityTest.maxConcurrentUsers, ''],
-        ['Average Download Speed (Mbps)', reportData.performance.averageSpeed.download.toFixed(1), ''],
-        ['Average Upload Speed (Mbps)', reportData.performance.averageSpeed.upload.toFixed(1), ''],
-        ['System Stability (%)', reportData.performance.reliability.systemStability.toFixed(1), ''],
-        ['Success Rate (%)', reportData.performance.reliability.sessionSuccessRate.toFixed(1), ''],
-        ['Hardware Cost ($)', reportData.commercialViability.costEffectiveness.hardwareCost, ''],
-        ['Cost per User ($)', reportData.commercialViability.costEffectiveness.costPerUser.toFixed(2), ''],
-        ['Reliability Score', reportData.commercialViability.reliabilityScore.toFixed(1), '']
+        ['Metric', 'Value'],
+        ['Report ID', reportData.reportId],
+        ['Generated', new Date().toLocaleString()],
+        ['Network', globalMode ? 'All Networks' : networkId || 'Unknown'],
+        ['Total Sessions', dashboardData.overview?.totalSessions || 0],
+        ['Active Users', dashboardData.overview?.totalActiveUsers || 0],
+        ['Completed Sessions', dashboardData.overview?.completedSessions || 0],
+        ['Average Download Speed (Mbps)', dashboardData.performance?.averageSpeed?.download || 0],
+        ['Average Upload Speed (Mbps)', dashboardData.performance?.averageSpeed?.upload || 0],
+        ['CPU Usage (%)', dashboardData.overview?.systemHealth?.cpu || 0],
+        ['Memory Usage (%)', dashboardData.overview?.systemHealth?.memory || 0],
+        ['Temperature (°C)', dashboardData.overview?.systemHealth?.temperature || 0],
+        ['Total Data Downloaded (GB)', dashboardData.traffic?.totalDataTransfer?.downloadGB || 0],
+        ['Total Data Uploaded (GB)', dashboardData.traffic?.totalDataTransfer?.uploadGB || 0],
+        ['Mobile Users', dashboardData.traffic?.deviceBreakdown?.mobile || 0],
+        ['Desktop Users', dashboardData.traffic?.deviceBreakdown?.desktop || 0],
+        ['Tablet Users', dashboardData.traffic?.deviceBreakdown?.tablet || 0],
       ]
       
       const csvContent = csvData.map(row => row.join(',')).join('\n')
@@ -260,48 +153,41 @@ export default function ReportsPage({ networkId, globalMode }: ReportProps) {
       const csvUrl = URL.createObjectURL(csvBlob)
       const csvLink = document.createElement('a')
       csvLink.href = csvUrl
-      csvLink.download = `report-${reportData.reportId}-metrics.csv`
+      csvLink.download = `network-report-${reportData.reportId}.csv`
       csvLink.click()
       URL.revokeObjectURL(csvUrl)
-      break
-      
- case 'pdf':
-  exportMutation.mutate({
-    format: 'json',
-    timeRange: reportData.type,
-    dataTypes: ['report'],
-  })
-  break
+    }
   }
-}
 
   const shareReport = () => {
-    if (!reportData) return
+    if (!dashboardData) return
     
     const shareData = {
-      title: `Castle Labs Network Report - ${reportData.type}`,
-      text: `Performance report for ${globalMode ? 'all networks' : reportData.networkName}`,
+      title: `Network Performance Report - ${globalMode ? 'All Networks' : networkId}`,
+      text: `Performance: ${dashboardData.performance?.averageSpeed?.download || 0} Mbps | Users: ${dashboardData.overview?.totalActiveUsers || 0} | Sessions: ${dashboardData.overview?.totalSessions || 0}`,
       url: window.location.href
     }
     
     if (navigator.share) {
       navigator.share(shareData)
     } else {
-      // Fallback - copy to clipboard
       navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}\n${shareData.url}`)
-      alert('Report link copied to clipboard!')
+      alert('Report summary copied to clipboard!')
     }
   }
 
   const getPerformanceGrade = () => {
-    if (!reportData) return 'N/A'
-    const { reliability } = reportData.performance
+    if (!dashboardData) return 'N/A'
     
-    if (reliability.systemStability >= 95) return 'A+'
-    if (reliability.systemStability >= 90) return 'A'
-    if (reliability.systemStability >= 85) return 'B+'
-    if (reliability.systemStability >= 80) return 'B'
-    return 'C'
+    const downloadSpeed = dashboardData.performance?.averageSpeed?.download || 0
+    const totalSessions = dashboardData.overview?.totalSessions || 0
+    
+    // Simple grading based on speed and sessions => Adjusted from standard test grading purposes
+    if (downloadSpeed > 50 && totalSessions > 20) return 'A+'
+    if (downloadSpeed > 20 && totalSessions > 10) return 'A'
+    if (downloadSpeed > 10 && totalSessions > 5) return 'B+'
+    if (downloadSpeed > 5 && totalSessions > 1) return 'B'
+    return 'B-'
   }
 
   const getStatusColor = (value: number, thresholds: { good: number; warning: number }) => {
@@ -321,17 +207,15 @@ export default function ReportsPage({ networkId, globalMode }: ReportProps) {
     )
   }
 
-  if (loading) {
+  if (loading || isGenerating) {
     return (
       <div className="space-y-6 p-6 bg-blue-900 min-h-screen">
         <div className="bg-black rounded-xl shadow-sm p-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-blue-800 rounded w-1/3"></div>
-            <div className="grid grid-cols-2 gap-4">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-20 bg-blue-800 rounded"></div>
-              ))}
-            </div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-300">
+              {isGenerating ? 'Generating report...' : 'Loading data...'}
+            </p>
           </div>
         </div>
       </div>
@@ -366,7 +250,7 @@ export default function ReportsPage({ networkId, globalMode }: ReportProps) {
           <div className="flex items-center space-x-4">
             <div>
               <div className="flex items-center space-x-2 mb-1">
-                <h2 className="text-lg font-bold text-gray-100">Performance Report</h2>
+                <h2 className="text-xl font-bold text-white">Network Performance Report</h2>
                 {globalMode ? (
                   <Globe className="h-6 w-6 text-blue-500" />
                 ) : (
@@ -376,7 +260,7 @@ export default function ReportsPage({ networkId, globalMode }: ReportProps) {
               <p className="text-gray-300">
                 {globalMode 
                   ? 'Comprehensive analysis across all network locations'
-                  : `Detailed performance analysis for ${reportData?.networkName || 'selected network'}`
+                  : `Current performance analysis for ${networkId}`
                 }
               </p>
             </div>
@@ -384,33 +268,11 @@ export default function ReportsPage({ networkId, globalMode }: ReportProps) {
           
           <div className="flex items-center space-x-3">
             <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center px-3 py-2 bg-blue-800 text-gray-200 rounded-lg hover:bg-blue-800 transition-colors"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-            </button>
-            
-            <div className="flex bg-blue-800 rounded-lg p-1">
-              {(['hourly', 'daily', 'weekly', 'monthly'] as const).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => setReportType(type)}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                    reportType === type ? 'bg-black text-gray-100 shadow-sm' : 'text-gray-300'
-                  }`}
-                >
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </button>
-              ))}
-            </div>
-            
-            <button
               onClick={generateReport}
-              disabled={loading}
+              disabled={isGenerating}
               className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              {loading ? (
+              {isGenerating ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Generating...
@@ -418,52 +280,18 @@ export default function ReportsPage({ networkId, globalMode }: ReportProps) {
               ) : (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Generate
+                  Refresh Data
                 </>
               )}
             </button>
           </div>
         </div>
-
-        {/* Filters Panel */}
-        {showFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">Start Date</label>
-                <input
-                  type="datetime-local"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={timeRange.start}
-                  onChange={(e) => setTimeRange(prev => ({ ...prev, start: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">End Date</label>
-                <input
-                  type="datetime-local"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={timeRange.end}
-                  onChange={(e) => setTimeRange(prev => ({ ...prev, end: e.target.value }))}
-                />
-              </div>
-              <div className="flex items-end">
-                <button
-                  onClick={generateReport}
-                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  Apply Filters
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Report Content */}
-      {reportData ? (
+      {dashboardData ? (
         <div className="space-y-6">
-          {/* Action Bar */}
+          {/* Export Options */}
           <div className="bg-black rounded-xl shadow-sm p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -482,14 +310,6 @@ export default function ReportsPage({ networkId, globalMode }: ReportProps) {
                   <FileText className="h-3 w-3 mr-1" />
                   CSV
                 </button>
-                <button
-                  onClick={() => downloadReport('pdf')}
-                  className="flex items-center px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm"
-                  disabled={exportMutation.isPending}
-                >
-                  <FileText className="h-3 w-3 mr-1" />
-                  PDF {exportMutation.isPending && '...'}
-                </button>
               </div>
               
               <div className="flex items-center space-x-2">
@@ -500,24 +320,22 @@ export default function ReportsPage({ networkId, globalMode }: ReportProps) {
                   <Share className="h-3 w-3 mr-1" />
                   Share
                 </button>
-                <button className="flex items-center px-3 py-1 bg-blue-800 text-gray-200 rounded-lg hover:bg-blue-800 transition-colors text-sm">
-                  <Mail className="h-3 w-3 mr-1" />
-                  Email
-                </button>
               </div>
             </div>
           </div>
 
           {/* Executive Summary */}
           <div className="bg-black rounded-xl shadow-sm p-6">
-            <h3 className="text-xl font-semibold text-gray-100 mb-4">Executive Summary</h3>
+            <h3 className="text-xl font-semibold text-white mb-4">Executive Summary</h3>
             
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="text-center">
                 <div className="bg-blue-50 rounded-lg p-4">
                   <Users className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                  <p className="text-lg font-bold text-blue-900">{reportData.scalabilityTest.maxConcurrentUsers}</p>
-                  <p className="text-sm text-blue-700">Peak Users</p>
+                  <p className="text-lg font-bold text-blue-900">
+                    {dashboardData.overview?.totalActiveUsers || 0}
+                  </p>
+                  <p className="text-sm text-blue-700">Active Users</p>
                 </div>
               </div>
               
@@ -525,7 +343,7 @@ export default function ReportsPage({ networkId, globalMode }: ReportProps) {
                 <div className="bg-green-50 rounded-lg p-4">
                   <Zap className="h-8 w-8 text-green-600 mx-auto mb-2" />
                   <p className="text-lg font-bold text-green-900">
-                    {reportData.performance.averageSpeed.download.toFixed(1)}
+                    {dashboardData.performance?.averageSpeed?.download?.toFixed(1) || '0.0'}
                   </p>
                   <p className="text-sm text-green-700">Avg Mbps</p>
                 </div>
@@ -533,11 +351,11 @@ export default function ReportsPage({ networkId, globalMode }: ReportProps) {
               
               <div className="text-center">
                 <div className="bg-purple-50 rounded-lg p-4">
-                  <CheckCircle className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                  <Activity className="h-8 w-8 text-purple-600 mx-auto mb-2" />
                   <p className="text-lg font-bold text-purple-900">
-                    {reportData.performance.reliability.systemStability.toFixed(1)}%
+                    {dashboardData.overview?.totalSessions || 0}
                   </p>
-                  <p className="text-sm text-purple-700">Stability</p>
+                  <p className="text-sm text-purple-700">Total Sessions</p>
                 </div>
               </div>
               
@@ -548,445 +366,325 @@ export default function ReportsPage({ networkId, globalMode }: ReportProps) {
                   <p className="text-sm text-orange-700">Grade</p>
                 </div>
               </div>
-
-              {globalMode && (
-                <div className="text-center">
-                  <div className="bg-indigo-50 rounded-lg p-4">
-                    <Globe className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
-                    <p className="text-lg font-bold text-indigo-900">
-                      {reportData.summary.networksOnline}/{reportData.summary.totalNetworks}
-                    </p>
-                    <p className="text-sm text-indigo-700">Networks</p>
-                  </div>
-                </div>
-              )}
             </div>
             
             <div className="bg-blue-900 rounded-lg p-4">
-              <h4 className="font-semibold text-gray-100 mb-2">Report Overview</h4>
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
+              <h4 className="font-semibold text-white mb-2">Report Overview</h4>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-300">Type:</span>
-                  <span className="ml-2 font-medium capitalize text-gray-100">{reportData.type}</span>
+                  <span className="text-gray-300">Generated:</span>
+                  <span className="ml-2 font-medium text-white">{new Date().toLocaleString()}</span>
                 </div>
                 <div>
-                  <span className="text-gray-300">Duration:</span>
-                  <span className="ml-2 font-medium text-gray-100">{reportData.testInfo.duration}</span>
+                  <span className="text-gray-300">Network:</span>
+                  <span className="ml-2 font-medium text-white">
+                    {globalMode ? 'All Networks' : networkId}
+                  </span>
                 </div>
                 <div>
-                  <span className="text-gray-300">Location:</span>
-                  <span className="ml-2 font-medium text-gray-100">{reportData.testInfo.location}</span>
-                </div>
-                <div>
-                  <span className="text-gray-300">Sessions:</span>
-                  <span className="ml-2 font-medium text-gray-100">{reportData.summary.totalSessions}</span>
+                  <span className="text-gray-300">Completed:</span>
+                  <span className="ml-2 font-medium text-white">
+                    {dashboardData.overview?.completedSessions || 0}
+                  </span>
                 </div>
                 <div>
                   <span className="text-gray-300">Success Rate:</span>
-                  <span className="ml-2 font-medium text-gray-100">{reportData.performance.reliability.sessionSuccessRate.toFixed(1)}%</span>
+                  <span className="ml-2 font-medium text-white">
+                    {dashboardData.overview?.totalSessions && dashboardData.overview?.totalSessions > 0
+                      ? ((dashboardData.overview?.completedSessions || 0) / dashboardData.overview.totalSessions * 100).toFixed(1)
+                      : 0}%
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Performance Analysis */}
+          {/* Current Performance */}
           <div className="bg-black rounded-xl shadow-sm p-6">
-            <h3 className="text-xl font-semibold text-gray-100 mb-4">Performance Analysis</h3>
+            <h3 className="text-xl font-semibold text-white mb-4">Current Performance</h3>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Speed Performance */}
+              {/* Network Speed */}
               <div className="bg-green-50 rounded-lg p-4">
                 <h4 className="font-semibold text-green-900 mb-3">Network Speed</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-green-700">Avg Download:</span>
+                    <span className="text-green-700">Download:</span>
                     <span className="font-bold text-green-900">
-                      {reportData.performance.averageSpeed.download.toFixed(1)} Mbps
+                      {dashboardData.performance?.averageSpeed?.download?.toFixed(1) || '0.0'} Mbps
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-green-700">Avg Upload:</span>
+                    <span className="text-green-700">Upload:</span>
                     <span className="font-bold text-green-900">
-                      {reportData.performance.averageSpeed.upload.toFixed(1)} Mbps
+                      {dashboardData.performance?.averageSpeed?.upload?.toFixed(1) || '0.0'} Mbps
                     </span>
                   </div>
-                  {reportData.performance.peakSpeed && (
-                    <>
-                      <div className="flex justify-between">
-                        <span className="text-green-700">Peak Download:</span>
-                        <span className="font-bold text-green-900">
-                          {reportData.performance.peakSpeed.download.toFixed(1)} Mbps
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-green-700">Peak Upload:</span>
-                        <span className="font-bold text-green-900">
-                          {reportData.performance.peakSpeed.upload.toFixed(1)} Mbps
-                        </span>
-                      </div>
-                    </>
-                  )}
+                  <div className="flex justify-between">
+                    <span className="text-green-700">Total Tests:</span>
+                    <span className="font-bold text-green-900">
+                      {dashboardData.performance?.totalSpeedTests || 0}
+                    </span>
+                  </div>
                   <div className="pt-2 border-t border-green-200">
                     <div className="flex items-center">
                       <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
                       <span className="text-sm text-green-700">
-                        {reportData.performance.averageSpeed.download > 50 ? 'Excellent' : 'Good'} performance
+                        {(dashboardData.performance?.averageSpeed?.download || 0) > 10 ? 'Excellent' : 
+                         (dashboardData.performance?.averageSpeed?.download || 0) > 5 ? 'Good' : 
+                         (dashboardData.performance?.averageSpeed?.download || 0) > 2 ? 'Fair' : 'Poor'} performance
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* System Performance */}
+              {/* System Health */}
               <div className="bg-blue-50 rounded-lg p-4">
                 <h4 className="font-semibold text-blue-900 mb-3">System Health</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-blue-700">Avg CPU:</span>
+                    <span className="text-blue-700">CPU:</span>
                     <span className="font-bold text-blue-900">
-                      {reportData.performance.systemLoad.averageCPU.toFixed(1)}%
+                      {dashboardData.overview?.systemHealth?.cpu?.toFixed(1) || '0.0'}%
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-blue-700">Avg Memory:</span>
+                    <span className="text-blue-700">Memory:</span>
                     <span className="font-bold text-blue-900">
-                      {reportData.performance.systemLoad.averageMemory.toFixed(1)}%
+                      {dashboardData.overview?.systemHealth?.memory?.toFixed(1) || '0.0'}%
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-blue-700">Max Temp:</span>
+                    <span className="text-blue-700">Temperature:</span>
                     <span className="font-bold text-blue-900">
-                      {reportData.performance.systemLoad.maxTemperature.toFixed(1)}°C
+                      {dashboardData.overview?.systemHealth?.temperature?.toFixed(1) || '0.0'}°C
                     </span>
                   </div>
-                  {reportData.performance.systemLoad.averageDiskUsage && (
-                    <div className="flex justify-between">
-                      <span className="text-blue-700">Disk Usage:</span>
-                      <span className="font-bold text-blue-900">
-                        {reportData.performance.systemLoad.averageDiskUsage.toFixed(1)}%
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Disk:</span>
+                    <span className="font-bold text-blue-900">
+                      {dashboardData.overview?.systemHealth?.diskUsage?.toFixed(1) || '0.0'}%
+                    </span>
+                  </div>
                   <div className="pt-2 border-t border-blue-200">
                     <div className="flex items-center">
                       <Thermometer className="h-4 w-4 text-blue-600 mr-2" />
                       <span className="text-sm text-blue-700">
-                        {reportData.performance.systemLoad.maxTemperature < 60 ? 'Normal' : 'Elevated'} temperatures
+                        {(dashboardData.overview?.systemHealth?.temperature || 0) < 60 ? 'Normal' : 
+                         (dashboardData.overview?.systemHealth?.temperature || 0) < 70 ? 'Warm' : 'Hot'} temperatures
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Reliability */}
+              {/* Data Usage */}
               <div className="bg-purple-50 rounded-lg p-4">
-                <h4 className="font-semibold text-purple-900 mb-3">Reliability</h4>
+                <h4 className="font-semibold text-purple-900 mb-3">Data Usage</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-purple-700">Success Rate:</span>
+                    <span className="text-purple-700">Downloaded:</span>
                     <span className="font-bold text-purple-900">
-                      {reportData.performance.reliability.sessionSuccessRate.toFixed(1)}%
+                      {dashboardData.traffic?.totalDataTransfer?.downloadGB?.toFixed(2) || '0.00'} GB
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-purple-700">Avg Session:</span>
+                    <span className="text-purple-700">Uploaded:</span>
                     <span className="font-bold text-purple-900">
-                      {Math.floor(reportData.performance.reliability.averageSessionDuration / 60)}m
+                      {dashboardData.traffic?.totalDataTransfer?.uploadGB?.toFixed(2) || '0.00'} GB
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-purple-700">Stability:</span>
+                    <span className="text-purple-700">Total:</span>
                     <span className="font-bold text-purple-900">
-                      {reportData.performance.reliability.systemStability.toFixed(1)}%
+                      {((dashboardData.traffic?.totalDataTransfer?.downloadGB || 0) + 
+                        (dashboardData.traffic?.totalDataTransfer?.uploadGB || 0)).toFixed(2)} GB
                     </span>
                   </div>
-                  {reportData.performance.reliability.uptime && (
-                    <div className="flex justify-between">
-                      <span className="text-purple-700">Uptime:</span>
-                      <span className="font-bold text-purple-900">
-                        {reportData.performance.reliability.uptime.toFixed(1)}%
-                      </span>
-                    </div>
-                  )}
-                  <div className="pt-2 border-t border-purple-200">
-                    <div className="flex items-center">
-                      <CheckCircle className="h-4 w-4 text-purple-600 mr-2" />
-                      <span className="text-sm text-purple-700">
-                        {reportData.performance.reliability.systemStability > 95 ? 'Excellent' : 'Good'} reliability
-                      </span>
-                    </div>
+                  <div className="flex justify-between">
+                    <span className="text-purple-700">Users:</span>
+                    <span className="font-bold text-purple-900">
+                      {dashboardData.traffic?.totalUsers || 0}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Network Breakdown (Global Mode Only) */}
-          {globalMode && reportData.networkBreakdown && (
-            <div className="bg-black rounded-xl shadow-sm p-6">
-              <h3 className="text-xl font-semibold text-gray-100 mb-4">Network Performance Breakdown</h3>
+          {/* Device Breakdown */}
+          <div className="bg-black rounded-xl shadow-sm p-6">
+            <h3 className="text-xl font-semibold text-white mb-4">Device Usage</h3>
+            
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-blue-50 rounded-lg p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Users className="h-6 w-6 text-blue-600 mr-2" />
+                  <span className="font-semibold text-blue-900">Mobile</span>
+                </div>
+                <p className="text-2xl font-bold text-blue-900">
+                  {dashboardData.traffic?.deviceBreakdown?.mobile || 0}
+                </p>
+              </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {reportData.networkBreakdown.map((network) => (
-                  <div key={network.networkId} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-gray-100">{network.networkName}</h4>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        network.performance.reliability > 90 
-                          ? 'bg-green-100 text-green-800' 
-                          : network.performance.reliability > 80
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {network.performance.reliability > 90 ? 'Excellent' : 
-                         network.performance.reliability > 80 ? 'Good' : 'Issues'}
-                      </span>
-                    </div>
-                    
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">Download:</span>
-                        <span className="font-medium">{network.performance.avgDownload.toFixed(1)} Mbps</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">Upload:</span>
-                        <span className="font-medium">{network.performance.avgUpload.toFixed(1)} Mbps</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">Users:</span>
-                        <span className="font-medium">{network.performance.users}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">Reliability:</span>
-                        <span className="font-medium">{network.performance.reliability.toFixed(1)}%</span>
-                      </div>
-                    </div>
-                    
-                    {network.issues && network.issues.length > 0 && network.issues[0] !== 'None' && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <p className="text-xs text-gray-300 mb-1">Issues:</p>
-                        {network.issues.map((issue, index) => (
-                          <div key={index} className="flex items-start text-xs text-red-600">
-                            <AlertTriangle className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
-                            {issue}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+              <div className="bg-green-50 rounded-lg p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Users className="h-6 w-6 text-green-600 mr-2" />
+                  <span className="font-semibold text-green-900">Desktop</span>
+                </div>
+                <p className="text-2xl font-bold text-green-900">
+                  {dashboardData.traffic?.deviceBreakdown?.desktop || 0}
+                </p>
+              </div>
+              
+              <div className="bg-purple-50 rounded-lg p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Users className="h-6 w-6 text-purple-600 mr-2" />
+                  <span className="font-semibold text-purple-900">Tablet</span>
+                </div>
+                <p className="text-2xl font-bold text-purple-900">
+                  {dashboardData.traffic?.deviceBreakdown?.tablet || 0}
+                </p>
+              </div>
+              
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Users className="h-6 w-6 text-gray-600 mr-2" />
+                  <span className="font-semibold text-gray-900">Unknown</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {dashboardData.traffic?.deviceBreakdown?.unknown || 0}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Network Status (Global Mode) */}
+          {globalMode && dashboardData.networks && (
+            <div className="bg-black rounded-xl shadow-sm p-6">
+              <h3 className="text-xl font-semibold text-white mb-4">Network Status</h3>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="bg-green-50 rounded-lg p-4 text-center">
+                  <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-green-900">
+                    {dashboardData.networks.online || 0}
+                  </p>
+                  <p className="text-sm text-green-700">Networks Online</p>
+                </div>
+                
+                <div className="bg-red-50 rounded-lg p-4 text-center">
+                  <AlertTriangle className="h-8 w-8 text-red-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-red-900">
+                    {dashboardData.networks.offline || 0}
+                  </p>
+                  <p className="text-sm text-red-700">Networks Offline</p>
+                </div>
+                
+                <div className="bg-blue-50 rounded-lg p-4 text-center">
+                  <Network className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-blue-900">
+                    {dashboardData.networks.total || 0}
+                  </p>
+                  <p className="text-sm text-blue-700">Total Networks</p>
+                </div>
               </div>
             </div>
           )}
 
-          {/* Commercial Viability */}
+          {/* System Recommendations */}
           <div className="bg-black rounded-xl shadow-sm p-6">
-            <h3 className="text-xl font-semibold text-gray-100 mb-4">Commercial Viability</h3>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-semibold text-gray-100 mb-3">Cost Analysis</h4>
-                <div className="bg-blue-900 rounded-lg p-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-300">Hardware Cost:</span>
-                      <p className="font-bold text-gray-100">
-                        ${reportData.commercialViability.costEffectiveness.hardwareCost}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-gray-300">Cost per User:</span>
-                      <p className="font-bold text-gray-100">
-                        ${reportData.commercialViability.costEffectiveness.costPerUser.toFixed(2)}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-gray-300">Users Supported:</span>
-                      <p className="font-bold text-gray-100">
-                        {reportData.commercialViability.costEffectiveness.usersSupported}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-gray-300">Data Served:</span>
-                      <p className="font-bold text-gray-100">
-                        {reportData.commercialViability.costEffectiveness.dataServed.toFixed(1)} GB
-                      </p>
-                    </div>
-                    {reportData.commercialViability.costEffectiveness.monthlyOperatingCost && (
-                      <>
-                        <div>
-                          <span className="text-gray-300">Monthly Cost:</span>
-                          <p className="font-bold text-gray-100">
-                            ${reportData.commercialViability.costEffectiveness.monthlyOperatingCost}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-gray-300">Cost per GB:</span>
-                          <p className="font-bold text-gray-100">
-                            ${reportData.commercialViability.costEffectiveness.costPerGB.toFixed(3)}
-                          </p>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold text-gray-100 mb-3">Scalability Assessment</h4>
-                <div className="space-y-3">
-                  {reportData.scalabilityTest.networkCapacity && (
-                    <div className="bg-blue-50 rounded-lg p-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-blue-700 font-medium">Current Capacity</span>
-                        <span className="text-blue-900 font-bold">
-                          {reportData.scalabilityTest.networkCapacity.current}/{reportData.scalabilityTest.networkCapacity.maximum}
-                        </span>
-                      </div>
-                      <div className="w-full bg-blue-200 rounded-full h-2">
-                        <div 
-                          className="h-2 bg-blue-500 rounded-full transition-all duration-300"
-                          style={{ 
-                            width: `${(reportData.scalabilityTest.networkCapacity.current / reportData.scalabilityTest.networkCapacity.maximum) * 100}%` 
-                          }}
-                        ></div>
-                      </div>
-                      <p className="text-xs text-blue-600 mt-1">
-                        {reportData.scalabilityTest.networkCapacity.efficiency.toFixed(1)}% efficiency
-                      </p>
-                    </div>
-                  )}
-                  
-                  <div className="grid grid-cols-1 gap-2">
-                    {Object.entries(reportData.scalabilityTest.performanceAtScale).map(([users, data]: [string, any]) => {
-                      const userCount = users.replace('_users', '')
-                      const status = data.stability > 95 ? 'excellent' : data.stability > 90 ? 'good' : 'warning'
-                      const colorClass = status === 'excellent' ? 'bg-green-50 text-green-700' : 
-                                       status === 'good' ? 'bg-blue-50 text-blue-700' : 'bg-yellow-50 text-yellow-700'
-                      
-                      return (
-                        <div key={users} className={`flex items-center justify-between p-2 rounded-lg ${colorClass}`}>
-                          <span className="font-medium">{userCount} Users</span>
-                          <div className="text-right">
-                            <span className="font-bold">{data.speed.toFixed(1)} Mbps</span>
-                            <span className="text-xs block">{data.stability.toFixed(1)}% stable</span>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Insights */}
-          <div className="bg-black rounded-xl shadow-sm p-6">
-            <h3 className="text-xl font-semibold text-gray-100 mb-4">Key Insights</h3>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div>
-                <h4 className="font-semibold text-blue-900 mb-3">Performance</h4>
-                <div className="space-y-2">
-                  {reportData.insights.performance.length > 0 ? reportData.insights.performance.map((insight, index) => (
-                    <div key={index} className="flex items-start p-2 bg-blue-50 rounded-lg">
-                      <TrendingUp className="h-4 w-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-blue-900">{insight}</span>
-                    </div>
-                  )) : (
-                    <div className="text-sm text-gray-300">No performance insights available</div>
-                  )}
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold text-green-900 mb-3">Efficiency</h4>
-                <div className="space-y-2">
-                  {reportData.insights.efficiency.length > 0 ? reportData.insights.efficiency.map((insight, index) => (
-                    <div key={index} className="flex items-start p-2 bg-green-50 rounded-lg">
-                      <CheckCircle className="h-4 w-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-green-900">{insight}</span>
-                    </div>
-                  )) : (
-                    <div className="text-sm text-gray-300">No efficiency insights available</div>
-                  )}
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold text-purple-900 mb-3">Scalability</h4>
-                <div className="space-y-2">
-                  {reportData.insights.scalability.length > 0 ? reportData.insights.scalability.map((insight, index) => (
-                    <div key={index} className="flex items-start p-2 bg-purple-50 rounded-lg">
-                      <Users className="h-4 w-4 text-purple-600 mr-2 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-purple-900">{insight}</span>
-                    </div>
-                  )) : (
-                    <div className="text-sm text-gray-300">No scalability insights available</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Recommendations */}
-          <div className="bg-black rounded-xl shadow-sm p-6">
-            <h3 className="text-xl font-semibold text-gray-100 mb-4">Recommendations</h3>
+            <h3 className="text-xl font-semibold text-white mb-4">System Recommendations</h3>
             
             <div className="space-y-3">
-              {reportData.recommendations.length > 0 ? reportData.recommendations.map((recommendation, index) => (
-                <div key={index} className="flex items-start p-4 bg-blue-50 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <span className="text-blue-900">{recommendation}</span>
+              {/* CPU Recommendation */}
+              {(dashboardData.overview?.systemHealth?.cpu || 0) > 80 && (
+                <div className="flex items-start p-4 bg-yellow-50 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="text-yellow-900 font-medium">High CPU Usage</span>
+                    <p className="text-sm text-yellow-700">
+                      CPU usage is at {(dashboardData.overview?.systemHealth?.cpu ?? 0).toFixed(1)}%. Consider optimizing processes or upgrading hardware.
+                    </p>
                   </div>
-                  <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
-                    Priority {index + 1}
-                  </span>
                 </div>
-              )) : (
-                <div className="text-center py-8 text-gray-300">
-                  No specific recommendations available
+              )}
+              
+              {/* Memory Recommendation */}
+              {(dashboardData.overview?.systemHealth?.memory || 0) > 85 && (
+                <div className="flex items-start p-4 bg-yellow-50 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="text-yellow-900 font-medium">High Memory Usage</span>
+                    <p className="text-sm text-yellow-700">
+                      Memory usage is at {(dashboardData.overview?.systemHealth?.memory ?? 0).toFixed(1)}%. Consider adding more RAM or optimizing memory usage.
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Temperature Recommendation */}
+              {(dashboardData.overview?.systemHealth?.temperature || 0) > 65 && (
+                <div className="flex items-start p-4 bg-red-50 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="text-red-900 font-medium">High Temperature</span>
+                    <p className="text-sm text-red-700">
+                      System temperature is at {(dashboardData.overview?.systemHealth?.temperature ?? 0).toFixed(1)}°C. Ensure proper ventilation and cooling.
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Performance Recommendation */}
+              {(dashboardData.performance?.averageSpeed?.download || 0) < 25 && (
+                <div className="flex items-start p-4 bg-blue-50 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="text-blue-900 font-medium">Network Performance</span>
+                    <p className="text-sm text-blue-700">
+                      Current download speed is {(dashboardData.performance?.averageSpeed?.download ?? 0).toFixed(1)} Mbps. Consider upgrading internet connection or optimizing network configuration.
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* No issues */}
+              {(dashboardData.overview?.systemHealth?.cpu || 0) <= 80 && 
+               (dashboardData.overview?.systemHealth?.memory || 0) <= 85 && 
+               (dashboardData.overview?.systemHealth?.temperature || 0) <= 65 && 
+               (dashboardData.performance?.averageSpeed?.download || 0) >= 25 && (
+                <div className="flex items-start p-4 bg-green-50 rounded-lg">
+                  <CheckCircle className="h-5 w-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="text-green-900 font-medium">System Operating Normally</span>
+                    <p className="text-sm text-green-700">
+                      All systems are operating within normal parameters. Continue monitoring for optimal performance.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
           </div>
-
-          {/* System Stress Points */}
-          {reportData.scalabilityTest.systemStressPoints.length > 0 && (
-            <div className="bg-black rounded-xl shadow-sm p-6">
-              <h3 className="text-xl font-semibold text-gray-100 mb-4">System Stress Points</h3>
-              
-              <div className="space-y-3">
-                {reportData.scalabilityTest.systemStressPoints.map((stressPoint, index) => (
-                  <div key={index} className="flex items-start p-4 bg-yellow-50 rounded-lg">
-                    <AlertTriangle className="h-5 w-5 text-yellow-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <span className="text-yellow-900">{stressPoint}</span>
-                    </div>
-                    <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full">
-                      Monitor
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Report Footer */}
           <div className="bg-black rounded-xl shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-300">
-                  Report ID: <span className="font-mono">{reportData.reportId}</span>
+                  Report ID: <span className="font-mono">RPT-{Date.now()}</span>
                 </p>
                 <p className="text-sm text-gray-300">
-                  Generated: {new Date(reportData.testInfo.endTime).toLocaleString()}
+                  Generated: {new Date().toLocaleString()}
+                </p>
+                <p className="text-sm text-gray-300">
+                  Network: {globalMode ? 'All Networks' : networkId}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-300">Castle Labs Network Analytics</p>
-                <p className="text-xs text-gray-300">Powered by Raspberry Pi Infrastructure</p>
+                <p className="text-sm text-gray-300">ZaaNet Network Analytics</p>
+                <p className="text-xs text-gray-400">Performance Report v1.0</p>
               </div>
             </div>
           </div>
@@ -994,7 +692,13 @@ export default function ReportsPage({ networkId, globalMode }: ReportProps) {
       ) : (
         <div className="bg-black rounded-xl shadow-sm p-6 text-center">
           <BarChart3 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-300">No report data available. Generate a new report to get started.</p>
+          <p className="text-gray-300">No data available. Please refresh to generate a report.</p>
+          <button
+            onClick={generateReport}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Generate Report
+          </button>
         </div>
       )}
     </div>

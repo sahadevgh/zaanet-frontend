@@ -77,9 +77,12 @@ export async function POST(request: Request): Promise<NextResponse> {
             );
         }
 
+        console.log(metadata.price, typeof metadata.price);
+        const priceInNumber = Number(metadata.price);
+
         // Validate price
-        if (typeof metadata.price !== 'number' || metadata.price < 0.1) {
-            console.error('Invalid price:', metadata.price);
+        if (typeof priceInNumber !== 'number' || priceInNumber < 0.1) {
+            console.error('Invalid price:', priceInNumber);
             return NextResponse.json(
                 { error: 'Price must be a number greater than or equal to 0.1' },
                 { status: 400 }
@@ -93,7 +96,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         const networkConfig = {
             networkId,
             ssid: metadata.ssid,
-            price: Number(metadata.price),
+            price: priceInNumber,
             description: metadata.description,
             image: metadata.image || '',
             location: {

@@ -30,10 +30,12 @@ import {
   LineChart,
   Line,
   Area,
-  AreaChart
+  AreaChart,
+  Pie
 } from 'recharts'
 import { useAdminQueries } from '@/hooks/useAdminQueries'
 import { useNetworkQueries } from '@/hooks/useNetworkQueries'
+import { DashboardData } from './Dashboard'
 
 interface SessionAnalyticsProps {
   detailed?: boolean
@@ -41,6 +43,15 @@ interface SessionAnalyticsProps {
   globalMode?: boolean
   isLive?: boolean
 }
+
+type HourlyTrend = {
+  hour: number;
+  date: string;
+  activeUsers: number;
+  cpu: number;
+  memory: number;
+  temperature: number;
+};
 
 interface SessionData {
   total: number
@@ -50,12 +61,7 @@ interface SessionData {
   totalSpeedTests: number
   totalDataTransfer: { downloadGB: number; uploadGB: number }
   deviceBreakdown: { mobile: number; desktop: number; tablet: number; unknown: number }
-  hourlyActivity: Array<{ hour: number; sessions: number }>
-  trends?: {
-    sessionsChange: number
-    durationChange: number
-    completionChange: number
-  }
+  hourlyActivity: HourlyTrend[];
   networkBreakdown?: Array<{
     networkId: string
     sessions: number
@@ -90,101 +96,11 @@ export default function SessionAnalytics({
       ? networkQueries?.useSessionAnalytics() // Network mode uses network session analytics
       : null
 
-  // Define a type for rawData to avoid property access errors
-  type RawDataType = {
-    sessionAnalytics?: {
-      total?: number
-      active?: number
-      completed?: number
-      averageDuration?: number
-      totalSpeedTests?: number
-      totalDataTransfer?: { downloadGB: number; uploadGB: number }
-      deviceBreakdown?: { mobile: number; desktop: number; tablet: number; unknown: number }
-      hourlyActivity?: Array<{ hour: number; sessions: number }>
-      trends?: {
-        sessionsChange: number
-        durationChange: number
-        completionChange: number
-      }
-      networkBreakdown?: Array<{
-        networkId: string
-        sessions: number
-        avgDuration: number
-        completionRate: number
-      }>
-      timeRange?: string
-      peakHour?: number
-      sessionQuality?: {
-        completionRate: number
-        avgTestsPerSession: number
-        avgDataPerSession: number
-      }
-    }
-    totalSessions?: number
-    activeSessions?: number
-    completedSessions?: number
-    avgSessionDuration?: number
-    totalTests?: number
-    dataTransfer?: { downloadGB: number; uploadGB: number }
-    deviceStats?: { mobile: number; desktop: number; tablet: number; unknown: number }
-    hourlyStats?: Array<{ hour: number; sessions: number }>
-    trends?: {
-      sessionsChange: number
-      durationChange: number
-      completionChange: number
-    }
-    networkStats?: Array<{
-      networkId: string
-      sessions: number
-      avgDuration: number
-      completionRate: number
-    }>
-    timeRange?: string
-    peakActivity?: { hour: number }
-    completionRate?: number
-    avgTestsPerSession?: number
-    avgDataPerSession?: number
-  }
-
   const { data: rawData, isLoading: loading, error, refetch } = sessionQuery || { 
     data: null, 
     isLoading: false, 
     error: null, 
     refetch: () => {} 
-  }
-
-  // Transform the API data to match our SessionData interface
-  const sessionData: SessionData = rawData ? {
-    total: (rawData as RawDataType).sessionAnalytics?.total ?? (rawData as RawDataType).totalSessions ?? 0,
-    active: (rawData as RawDataType).sessionAnalytics?.active ?? (rawData as RawDataType).activeSessions ?? 0,
-    completed: (rawData as RawDataType).sessionAnalytics?.completed ?? (rawData as RawDataType).completedSessions ?? 0,
-    averageDuration: (rawData as RawDataType).sessionAnalytics?.averageDuration ?? (rawData as RawDataType).avgSessionDuration ?? 0,
-    totalSpeedTests: (rawData as RawDataType).sessionAnalytics?.totalSpeedTests ?? (rawData as RawDataType).totalTests ?? 0,
-    totalDataTransfer: (rawData as RawDataType).sessionAnalytics?.totalDataTransfer ?? (rawData as RawDataType).dataTransfer ?? { downloadGB: 0, uploadGB: 0 },
-    deviceBreakdown: (rawData as RawDataType).sessionAnalytics?.deviceBreakdown ?? (rawData as RawDataType).deviceStats ?? { mobile: 0, desktop: 0, tablet: 0, unknown: 0 },
-    hourlyActivity: (rawData as RawDataType).sessionAnalytics?.hourlyActivity ?? (rawData as RawDataType).hourlyStats ?? [],
-    trends: (rawData as RawDataType).sessionAnalytics?.trends ?? (rawData as RawDataType).trends,
-    networkBreakdown: (rawData as RawDataType).sessionAnalytics?.networkBreakdown ?? (rawData as RawDataType).networkStats ?? [],
-    timeRange: (rawData as RawDataType).sessionAnalytics?.timeRange ?? '24h',
-    peakHour: (rawData as RawDataType).sessionAnalytics?.peakHour ?? (rawData as RawDataType).peakActivity?.hour,
-    sessionQuality: (rawData as RawDataType).sessionAnalytics?.sessionQuality ?? {
-      completionRate: (rawData as RawDataType).completionRate ?? 0,
-      avgTestsPerSession: (rawData as RawDataType).avgTestsPerSession ?? 0,
-      avgDataPerSession: (rawData as RawDataType).avgDataPerSession ?? 0
-    }
-  } : {
-    total: 0,
-    active: 0,
-    completed: 0,
-    averageDuration: 0,
-    totalSpeedTests: 0,
-    totalDataTransfer: { downloadGB: 0, uploadGB: 0 },
-    deviceBreakdown: { mobile: 0, desktop: 0, tablet: 0, unknown: 0 },
-    hourlyActivity: [],
-    trends: { sessionsChange: 0, durationChange: 0, completionChange: 0 },
-    networkBreakdown: [],
-    timeRange: '24h',
-    sessionQuality: { completionRate: 0, avgTestsPerSession: 0, avgDataPerSession: 0 }
   }
 
   const formatDuration = (seconds: number): string => {
@@ -207,15 +123,6 @@ export default function SessionAnalytics({
     if (value < 0) return 'text-red-600'
     return 'text-gray-400'
   }
-
-  const deviceData = [
-    { name: 'Desktop', value: sessionData.deviceBreakdown.desktop, color: '#3B82F6', icon: Monitor },
-    { name: 'Mobile', value: sessionData.deviceBreakdown.mobile, color: '#10B981', icon: Smartphone },
-    { name: 'Tablet', value: sessionData.deviceBreakdown.tablet, color: '#F59E0B', icon: Tablet },
-    { name: 'Unknown', value: sessionData.deviceBreakdown.unknown, color: '#6B7280', icon: Globe }
-  ]
-
-  const pieChartData = deviceData.filter(item => item.value > 0)
 
   if (!globalMode && !networkId) {
     return (
@@ -262,6 +169,79 @@ export default function SessionAnalytics({
       </div>
     )
   }
+
+  // Map the raw data to SessionData format
+  let sessionData: SessionData;
+
+  if (globalMode) {
+    // Global mode - use dashboard data structure
+    const dashboardData = rawData as DashboardData;
+    
+    sessionData = {
+      total: dashboardData?.overview?.totalSessions || 0,
+      active: dashboardData?.overview?.totalActiveUsers || 0,
+      completed: dashboardData?.overview?.completedSessions || 0,
+      averageDuration: dashboardData?.overview?.averageSessionDuration || 0,
+      totalSpeedTests: dashboardData?.overview?.totalSpeedTests || 0,
+      totalDataTransfer: {
+        downloadGB: dashboardData?.traffic?.totalDataTransfer?.downloadGB || 0,
+        uploadGB: dashboardData?.traffic?.totalDataTransfer?.uploadGB || 0
+      },
+      deviceBreakdown: {
+        mobile: dashboardData?.traffic?.deviceBreakdown?.mobile || 0,
+        desktop: dashboardData?.traffic?.deviceBreakdown?.desktop || 0,
+        tablet: dashboardData?.traffic?.deviceBreakdown?.tablet || 0,
+        unknown: dashboardData?.traffic?.deviceBreakdown?.unknown || 0
+      },
+      hourlyActivity: dashboardData?.trends?.hourly || [],
+      networkBreakdown: dashboardData?.networkBreakdown,
+      timeRange: dashboardData?.metadata?.lastUpdated ? 
+        `Last updated: ${new Date(dashboardData.metadata.lastUpdated).toLocaleString()}` : 
+        'Last 24 hours',
+      peakHour: dashboardData?.trends?.hourly?.length > 0 ? 
+        dashboardData.trends.hourly.reduce((max, curr) => 
+          curr.activeUsers > max.activeUsers ? curr : max
+        ).hour : undefined,
+      sessionQuality: {
+        completionRate: dashboardData?.overview?.totalSessions > 0 ? 
+          ((dashboardData?.overview?.completedSessions || 0) / dashboardData.overview.totalSessions) * 100 : 0,
+        avgTestsPerSession: dashboardData?.overview?.totalSessions > 0 ? 
+          (dashboardData?.overview?.totalSpeedTests || 0) / dashboardData.overview.totalSessions : 0,
+        avgDataPerSession: dashboardData?.overview?.totalSessions > 0 ? 
+          ((dashboardData?.traffic?.totalDataTransfer?.downloadGB || 0) + 
+           (dashboardData?.traffic?.totalDataTransfer?.uploadGB || 0)) / dashboardData.overview.totalSessions : 0
+      }
+    }
+  } else {
+    // Network mode - use network-specific data structure
+    const typedRawData = (rawData ?? {}) as Partial<SessionData>;
+    sessionData = {
+      total: typedRawData.total || 0,
+      active: typedRawData.active || 0,
+      completed: typedRawData.completed || 0,
+      averageDuration: typedRawData.averageDuration || 0,
+      totalSpeedTests: typedRawData.totalSpeedTests || 0,
+      totalDataTransfer: typedRawData.totalDataTransfer || { downloadGB: 0, uploadGB: 0 },
+      deviceBreakdown: typedRawData.deviceBreakdown || { mobile: 0, desktop: 0, tablet: 0, unknown: 0 },
+      hourlyActivity: typedRawData.hourlyActivity || [],
+      timeRange: typedRawData.timeRange || 'Last 24 hours',
+      peakHour: typedRawData.peakHour,
+      sessionQuality: {
+        completionRate: typedRawData.sessionQuality?.completionRate || 0,
+        avgTestsPerSession: typedRawData.sessionQuality?.avgTestsPerSession || 0,
+        avgDataPerSession: typedRawData.sessionQuality?.avgDataPerSession || 0
+      }
+    }
+  }
+
+  const deviceData = [
+    { name: 'Desktop', value: sessionData.deviceBreakdown.desktop, color: '#3B82F6', icon: Monitor },
+    { name: 'Mobile', value: sessionData.deviceBreakdown.mobile, color: '#10B981', icon: Smartphone },
+    { name: 'Tablet', value: sessionData.deviceBreakdown.tablet, color: '#F59E0B', icon: Tablet },
+    { name: 'Unknown', value: sessionData.deviceBreakdown.unknown, color: '#6B7280', icon: Globe }
+  ]
+
+  const pieChartData = deviceData.filter(item => item.value > 0)
 
   return (
     <div className="bg-black rounded-xl shadow-sm">
@@ -312,7 +292,7 @@ export default function SessionAnalytics({
           </div>
         </div>
         <p className="text-xs text-gray-400 mt-1">
-          Timeframe: {sessionData.timeRange}
+          {sessionData.timeRange}
         </p>
       </div>
 
@@ -328,14 +308,6 @@ export default function SessionAnalytics({
                   <p className="text-xl font-bold text-blue-900">{sessionData.total}</p>
                 </div>
               </div>
-              {sessionData.trends && (
-                <div className="flex flex-col items-end">
-                  {getTrendIcon(sessionData.trends.sessionsChange)}
-                  <span className={`text-xs font-medium ${getTrendColor(sessionData.trends.sessionsChange)}`}>
-                    {Math.abs(sessionData.trends.sessionsChange).toFixed(1)}%
-                  </span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -343,7 +315,7 @@ export default function SessionAnalytics({
             <div className="flex items-center">
               <Activity className="h-6 w-6 text-green-600" />
               <div className="ml-3">
-                <p className="text-sm font-medium text-green-600">Active Now</p>
+                <p className="text-sm font-medium text-green-600">Active Users</p>
                 <p className="text-xl font-bold text-green-900">{sessionData.active}</p>
               </div>
             </div>
@@ -360,14 +332,6 @@ export default function SessionAnalytics({
                   </p>
                 </div>
               </div>
-              {sessionData.trends && (
-                <div className="flex flex-col items-end">
-                  {getTrendIcon(sessionData.trends.durationChange)}
-                  <span className={`text-xs font-medium ${getTrendColor(sessionData.trends.durationChange)}`}>
-                    {Math.abs(sessionData.trends.durationChange).toFixed(1)}%
-                  </span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -397,7 +361,7 @@ export default function SessionAnalytics({
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
                       className="h-2 bg-green-500 rounded-full transition-all duration-300"
-                      style={{ width: `${sessionData.sessionQuality?.completionRate}%` }}
+                      style={{ width: `${Math.min(sessionData.sessionQuality?.completionRate || 0, 100)}%` }}
                     ></div>
                   </div>
                 </div>
@@ -408,7 +372,7 @@ export default function SessionAnalytics({
                   </div>
                   <div>
                     <p className="text-gray-300">Avg Data/Session</p>
-                    <p className="font-bold text-white">{sessionData.sessionQuality?.avgDataPerSession.toFixed(1)} GB</p>
+                    <p className="font-bold text-white">{sessionData.sessionQuality?.avgDataPerSession.toFixed(2)} GB</p>
                   </div>
                 </div>
               </div>
@@ -427,7 +391,7 @@ export default function SessionAnalytics({
                 <div className="flex justify-between">
                   <span className="text-gray-400">Most Used Device:</span>
                   <span className="font-medium text-gray-300">
-                    {deviceData.reduce((max, curr) => curr.value > max.value ? curr : max).name}
+                    {deviceData.length > 0 ? deviceData.reduce((max, curr) => curr.value > max.value ? curr : max).name : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -453,16 +417,22 @@ export default function SessionAnalytics({
             <div className="bg-blue-900 rounded-lg p-4">
               <h4 className="text-sm font-medium text-gray-200 mb-4">Device Distribution</h4>
               <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPieChart>
-                    <Tooltip formatter={(value: number) => [value, 'Sessions']} />
-                    <RechartsPieChart data={pieChartData}>
-                      {pieChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
+                {pieChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPieChart>
+                      <Tooltip formatter={(value: number) => [value, 'Sessions']} />
+                      <Pie data={pieChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
+                        {pieChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
                     </RechartsPieChart>
-                  </RechartsPieChart>
-                </ResponsiveContainer>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-400">
+                    <p>No device data available</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -472,7 +442,8 @@ export default function SessionAnalytics({
               <div className="space-y-3">
                 {deviceData.map((device) => {
                   const Icon = device.icon
-                  const percentage = sessionData.total > 0 ? (device.value / sessionData.total * 100).toFixed(1) : '0'
+                  const totalDevices = deviceData.reduce((sum, d) => sum + d.value, 0)
+                  const percentage = totalDevices > 0 ? (device.value / totalDevices * 100).toFixed(1) : '0'
                   return (
                     <div key={device.name} className="flex items-center justify-between">
                       <div className="flex items-center">
@@ -506,35 +477,47 @@ export default function SessionAnalytics({
             <div className="bg-blue-900 rounded-lg p-4">
               <h4 className="text-sm font-medium text-gray-200 mb-4">24-Hour Activity Pattern</h4>
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={sessionData.hourlyActivity}>
-                    <defs>
-                      <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="hour" 
-                      tick={{ fontSize: 12 }}
-                      tickFormatter={(value) => `${value}:00`}
-                    />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip 
-                      formatter={(value: number) => [value, 'Sessions']}
-                      labelFormatter={(hour) => `${hour}:00 - ${hour + 1}:00`}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="sessions" 
-                      stroke="#3B82F6" 
-                      fillOpacity={1} 
-                      fill="url(#activityGradient)"
-                      strokeWidth={2}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                {sessionData.hourlyActivity.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={sessionData.hourlyActivity}>
+                      <defs>
+                        <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis 
+                        dataKey="hour" 
+                        tick={{ fontSize: 12, fill: '#9CA3AF' }}
+                        tickFormatter={(value) => `${value}:00`}
+                      />
+                      <YAxis tick={{ fontSize: 12, fill: '#9CA3AF' }} />
+                      <Tooltip 
+                        formatter={(value: number) => [value, 'Active Users']}
+                        labelFormatter={(hour) => `${hour}:00 - ${hour + 1}:00`}
+                        contentStyle={{ 
+                          backgroundColor: '#1F2937', 
+                          border: '1px solid #374151',
+                          borderRadius: '6px',
+                          color: '#F9FAFB'
+                        }}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="activeUsers" 
+                        stroke="#3B82F6" 
+                        fillOpacity={1} 
+                        fill="url(#activityGradient)"
+                        strokeWidth={2}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-400">
+                    <p>No hourly activity data available</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -549,15 +532,15 @@ export default function SessionAnalytics({
                       <div className="space-y-1 text-sm">
                         <div className="flex justify-between">
                           <span className="text-gray-300">Sessions:</span>
-                          <span className="font-medium">{network.sessions}</span>
+                          <span className="font-medium text-white">{network.sessions}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-300">Avg Duration:</span>
-                          <span className="font-medium">{formatDuration(network.avgDuration)}</span>
+                          <span className="font-medium text-white">{formatDuration(network.avgDuration)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-300">Completion:</span>
-                          <span className="font-medium">{network.completionRate.toFixed(1)}%</span>
+                          <span className="font-medium text-white">{network.completionRate.toFixed(1)}%</span>
                         </div>
                       </div>
                     </div>
@@ -603,13 +586,14 @@ export default function SessionAnalytics({
                   </li>
                   <li className="flex justify-between">
                     <span>Primary Device:</span>
-                    <span className="font-medium">{deviceData.reduce((max, curr) => curr.value > max.value ? curr : max).name}</span>
+                    <span className="font-medium">
+                      {deviceData.length > 0 ? deviceData.reduce((max, curr) => curr.value > max.value ? curr : max).name : 'N/A'}
+                    </span>
                   </li>
                   <li className="flex justify-between">
-                    <span>Session Trend:</span>
-                    <span className={`font-medium ${getTrendColor(sessionData.trends?.sessionsChange || 0)}`}>
-                      {sessionData.trends?.sessionsChange && sessionData.trends.sessionsChange > 0 ? '+' : ''}
-                      {sessionData.trends?.sessionsChange?.toFixed(1) || '0'}%
+                    <span>Total Data:</span>
+                    <span className="font-medium">
+                      {(sessionData.totalDataTransfer.downloadGB + sessionData.totalDataTransfer.uploadGB).toFixed(1)} GB
                     </span>
                   </li>
                 </ul>

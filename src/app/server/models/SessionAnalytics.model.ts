@@ -13,6 +13,7 @@ export interface ISessionAnalytics extends Document {
   totalDataTransfer: {
     downloadGB: number;
     uploadGB: number;
+    totalGB?: number; 
   };
   deviceBreakdown: {
     mobile: number;
@@ -33,18 +34,19 @@ export interface ISessionAnalytics extends Document {
 }
 
 const SessionAnalyticsSchema = new Schema<ISessionAnalytics>({
-  networkId: { type: String, required: true, index: true },
-  date: { type: String, required: true, index: true },
-  hour: { type: Number, required: true, min: 0, max: 23 },
-  timestamp: { type: Date, required: true, index: true },
-  totalSessions: { type: Number, required: true, default: 0 },
-  activeSessions: { type: Number, required: true, default: 0 },
-  completedSessions: { type: Number, required: true, default: 0 },
-  averageDuration: { type: Number, required: true, default: 0 },
-  totalSpeedTests: { type: Number, required: true, default: 0 },
+  networkId: { type: String, index: true },
+  date: { type: String, index: true },
+  hour: { type: Number, min: 0, max: 23 },
+  timestamp: { type: Date, index: true },
+  totalSessions: { type: Number, default: 0 },
+  activeSessions: { type: Number, default: 0 },
+  completedSessions: { type: Number, default: 0 },
+  averageDuration: { type: Number, default: 0 },
+  totalSpeedTests: { type: Number, default: 0 },
   totalDataTransfer: {
     downloadGB: { type: Number, default: 0 },
-    uploadGB: { type: Number, default: 0 }
+    uploadGB: { type: Number, default: 0 },
+    totalGB: { type: Number, default: 0 }
   },
   deviceBreakdown: {
     mobile: { type: Number, default: 0 },
@@ -57,7 +59,8 @@ const SessionAnalyticsSchema = new Schema<ISessionAnalytics>({
     sessions: { type: Number, default: 0 },
     averageSpeed: {
       download: { type: Number, default: 0 },
-      upload: { type: Number, default: 0 }
+      upload: { type: Number, default: 0 },
+      totalGB: { type: Number, default: 0 }
     }
   }],
   qualityMetrics: {
