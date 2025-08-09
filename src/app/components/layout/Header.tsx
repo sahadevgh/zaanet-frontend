@@ -2,16 +2,20 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ConnectBtn } from '../web3/WalletConnect';
 import { cn } from "@/lib/utils";
+import { ConnectBtn } from '../web3/Web3Provider';
+import { useAccount } from 'wagmi';
+import { emojiAvatarForAddress } from '../web3/emojiAvatarForAddress';
 
 const Header: React.FC = () => {
+  const { address, isConnected } = useAccount();
+  const { color: backgroundColor, emoji } = emojiAvatarForAddress(address ?? '');
 
   return (
-    <header className="bg-black/80 backdrop-blur-md border-b border-blue-300 sticky top-0 z-50 transition-all duration-300">
-      <div className="container mx-auto flex justify-between items-center py-4 px-4">
-        <Link 
-          href="/" 
+    <header className="bg-blue-950 backdrop-blur-md border-b border-blue-500/25 sticky top-0 z-50 transition-all duration-300">
+      <div className="w-[95vw] mx-auto flex justify-between items-center py-4 px-4">
+        <Link
+          href="/"
           className="flex items-center space-x-1 group"
         >
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-300 to-blue-100 flex items-center justify-center transition-transform group-hover:scale-105 duration-300">
@@ -21,37 +25,53 @@ const Header: React.FC = () => {
             ZaaNet
           </span>
         </Link>
-        
+
         <nav className="hidden md:flex items-center space-x-8">
-          <Link 
-            href="/browse" 
+          <Link
+            href="/browse"
             className="text-blue-100 hover:text-blue-400 transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-400 hover:after:w-full after:transition-all"
           >
-            Browse Networks
+            Home
           </Link>
-          <Link 
-            href="/host-network" 
+          <Link
+            href="/browse"
             className="text-blue-100 hover:text-blue-400 transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-400 hover:after:w-full after:transition-all"
           >
-            Host a Network
+            Browse WiFis
           </Link>
-          <Link 
-            href="/litepaper" 
+          <Link
+            href="/host-network"
             className="text-blue-100 hover:text-blue-400 transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-400 hover:after:w-full after:transition-all"
           >
-            Litepaper
+            Host a WiFi
+          </Link>
+          <Link
+            href="/litepaper"
+            className="text-blue-100 hover:text-blue-400 transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-400 hover:after:w-full after:transition-all"
+          >
+            About
+          </Link>
+          <Link
+            href="/litepaper"
+            className="text-blue-100 hover:text-blue-400 transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-blue-400 hover:after:w-full after:transition-all"
+          >
+            Contact
           </Link>
         </nav>
-        
+
         <div className="flex items-center space-x-4">
-          <ConnectBtn />
-          
-          <button 
+          <ConnectBtn
+            backgroundColor={backgroundColor}
+            emoji={emoji}
+            isConnected={isConnected}
+            address={address}
+          />
+          <button
             className={cn(
               "md:hidden p-2 rounded-lg transition-colors",
               "hover:bg-gray-100 active:bg-gray-200",
               "focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
-            )} 
+            )}
             title="Open menu"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

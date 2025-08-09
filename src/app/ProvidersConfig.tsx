@@ -1,32 +1,48 @@
-'use client'
+'use client';
 
+import { WagmiProvider, cookieToInitialState } from "wagmi";
 import { Toaster } from "@/app/components/ui/toaster";
 import { Toaster as Sonner } from "@/app/components/ui/sonner";
 import { TooltipProvider } from "@/app/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-import { SmartAccountProvider } from "./components/web3/SmartAccountProvider";
+import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import '@rainbow-me/rainbowkit/styles.css';
+import { config } from "./components/web3/Config";
+
+
+
+const queryClient = new QueryClient();
 
 interface ProvidersConfigProps {
   children: React.ReactNode;
-  cookie?: string | null; 
+  cookie?: string | null;
 }
 
 function ProvidersConfig({ children, cookie }: ProvidersConfigProps) {
-  const queryClient = new QueryClient();
+  const initialState = cookieToInitialState(config, cookie);
 
   return (
-    <SmartAccountProvider cookie={cookie ?? null}>
+    <WagmiProvider config={config} initialState={initialState}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          {children}
+          <RainbowKitProvider
+          modalSize="compact"
+            theme={darkTheme({
+              accentColor: "#0E76FD",
+              accentColorForeground: "white",
+              borderRadius: "large",
+              fontStack: "system",
+              overlayBlur: "small",
+            })}>
+            {children}
+          </RainbowKitProvider>
         </TooltipProvider>
       </QueryClientProvider>
-    </SmartAccountProvider>
+    </WagmiProvider>
   );
 }
-
 
 export default ProvidersConfig;

@@ -29,107 +29,107 @@ import type { WifiNetwork } from "@/types";
 import Layout from "../Layout";
 import { createPublicClient, formatUnits, getContract, http } from "viem";
 import { arbitrumSepolia } from "viem/chains";
-import {
-  network_Abi,
-  storage_Abi,
-  zaanetNetwork_CA,
-  zaanetStorage_CA,
-  ZERODEV_RPC,
-} from "../../web3/contants/projectData";
-import { useSmartAccount } from "../../web3/SmartAccountProvider";
+// import {
+//   network_Abi,
+//   storage_Abi,
+//   zaanetNetwork_CA,
+//   zaanetStorage_CA,
+//   ZERODEV_RPC,
+// } from "../../web3/contants/projectData";
+// import { useSmartAccount } from "../../web3/SmartAccountProvider";
 
 export default function HostDashboard() {
-  const { address } = useSmartAccount();
+  // const { address } = useSmartAccount();
   const [editingNetwork, setEditingNetwork] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [availableNetworks, setAvailableNetworks] = useState<WifiNetwork[]>([]);
   const [hostEarnings, setHostEarnings] = useState<number>(0);
 
   // Functiion to fetch networks for the host from the blockchain
-  const fetchHostNetworks = async () => {
-    setIsLoading(true);
-    try {
-      const publicClient = createPublicClient({
-        chain: arbitrumSepolia,
-        transport: http(ZERODEV_RPC),
-      });
+  // const fetchHostNetworks = async () => {
+  //   setIsLoading(true);
+  //   try {
+  //     const publicClient = createPublicClient({
+  //       chain: arbitrumSepolia,
+  //       transport: http(ZERODEV_RPC),
+  //     });
 
-      const networkContract = getContract({
-        address: zaanetNetwork_CA as `0x${string}`,
-        abi: network_Abi,
-        client: publicClient,
-      });
+  //     const networkContract = getContract({
+  //       address: zaanetNetwork_CA as `0x${string}`,
+  //       abi: network_Abi,
+  //       client: publicClient,
+  //     });
 
-      const storageContract = getContract({
-        address: zaanetStorage_CA as `0x${string}`,
-        abi: storage_Abi,
-        client: publicClient,
-      });
+  //     const storageContract = getContract({
+  //       address: zaanetStorage_CA as `0x${string}`,
+  //       abi: storage_Abi,
+  //       client: publicClient,
+  //     });
 
-      // Get the total earnings for the host
-      const earnings = await storageContract.read.getHostEarnings([address]);
+  //     // Get the total earnings for the host
+  //     const earnings = await storageContract.read.getHostEarnings([address]);
 
-      setHostEarnings(
-        Number(formatUnits(BigInt(earnings as string | number | bigint), 18))
-      );
+  //     setHostEarnings(
+  //       Number(formatUnits(BigInt(earnings as string | number | bigint), 18))
+  //     );
 
-      // Get all networks IDs hosted by the user
-      const hostedNetworkIds = (await networkContract.read.getHostNetworks([
-        address,
-      ])) as number[];
+  //     // Get all networks IDs hosted by the user
+  //     const hostedNetworkIds = (await networkContract.read.getHostNetworks([
+  //       address,
+  //     ])) as number[];
 
-      const networkPromises = [];
-      for (let i = 0; i < hostedNetworkIds.length; i++) {
-        networkPromises.push(
-          networkContract.read.getHostedNetworkById([hostedNetworkIds[i]])
-        );
-      }
+  //     const networkPromises = [];
+  //     for (let i = 0; i < hostedNetworkIds.length; i++) {
+  //       networkPromises.push(
+  //         networkContract.read.getHostedNetworkById([hostedNetworkIds[i]])
+  //       );
+  //     }
 
-      const networksRaw = (await Promise.all(networkPromises)) as {
-        id: number;
-        metadataCID: string;
-        price: number | string;
-        host: string;
-        isActive: boolean;
-        ratingCount: number;
-        successfullSessions: number;
-        totalRating: number;
-      }[];
+  //     const networksRaw = (await Promise.all(networkPromises)) as {
+  //       id: number;
+  //       metadataCID: string;
+  //       price: number | string;
+  //       host: string;
+  //       isActive: boolean;
+  //       ratingCount: number;
+  //       successfullSessions: number;
+  //       totalRating: number;
+  //     }[];
 
-      const metadataPromises = networksRaw.map((network) =>
-        fetch(`https://ipfs.io/ipfs/${network.metadataCID}`)
-          .then((res) => res.json())
-          .catch(() => ({}))
-      );
+  //     const metadataPromises = networksRaw.map((network) =>
+  //       fetch(`https://ipfs.io/ipfs/${network.metadataCID}`)
+  //         .then((res) => res.json())
+  //         .catch(() => ({}))
+  //     );
 
-      const metadataList = await Promise.all(metadataPromises);
+  //     const metadataList = await Promise.all(metadataPromises);
 
-      const networks: WifiNetwork[] = networksRaw
-        .filter((n) => n.id !== 0 && n.isActive)
-        .map((network, i) => ({
-          id: network.id.toString(),
-          metadataCID: network.metadataCID,
-          price: Number(network.price),
-          hostWallet: network.host,
-          ratingCount: Number(network.ratingCount),
-          successfullSessions: Number(network.successfullSessions),
-          totalRating: Number(network.totalRating),
-          status: network.isActive ? "active" : "inactive",
-          ...(metadataList[i] || {}),
-        }));
+  //     const networks: WifiNetwork[] = networksRaw
+  //       .filter((n) => n.id !== 0 && n.isActive)
+  //       .map((network, i) => ({
+  //         id: network.id.toString(),
+  //         metadataCID: network.metadataCID,
+  //         price: Number(network.price),
+  //         hostWallet: network.host,
+  //         ratingCount: Number(network.ratingCount),
+  //         successfullSessions: Number(network.successfullSessions),
+  //         totalRating: Number(network.totalRating),
+  //         status: network.isActive ? "active" : "inactive",
+  //         ...(metadataList[i] || {}),
+  //       }));
 
-      setAvailableNetworks(networks);
-    } catch (error) {
-      console.error("Failed to load networks:", error);
-      setAvailableNetworks([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     setAvailableNetworks(networks);
+  //   } catch (error) {
+  //     console.error("Failed to load networks:", error);
+  //     setAvailableNetworks([]);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
-  useEffect(() => {
-    fetchHostNetworks();
-  }, [address]);
+  // useEffect(() => {
+  //   fetchHostNetworks();
+  // }, [address]);
 
   const totalSessions = availableNetworks.reduce(
     (sum, network) => sum + network.successfullSessions,

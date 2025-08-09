@@ -8,12 +8,13 @@ import {
   CardTitle,
 } from "@/app/components/ui/card";
 import { toast } from "sonner";
-import { useSmartAccount } from "../../web3/SmartAccountProvider";
+// import { useSmartAccount } from "../../web3/SmartAccountProvider";
 import { useRouter } from "next/navigation";
 import { Button } from "../../ui/button";
 import { Copy, QrCode, ArrowLeft, AlertTriangle } from "lucide-react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
+import { useAccount } from "wagmi";
 
 // Lazy load QR code component
 const QRCode = dynamic(() => import("react-qr-code"), { ssr: false });
@@ -25,37 +26,42 @@ declare global {
   }
 }
 
-const Fund = () => {
-  const { address, isConnected, userType, connect } = useSmartAccount();
+type Props = {
+  userType: "user" | "admin";
+};
+
+const Fund = ({ userType }: Props) => {
+  // const { address, isConnected, userType, connect } = useSmartAccount();
+  const { address, isConnected } =  useAccount();
   const router = useRouter();
   const [isTransakLoaded, setIsTransakLoaded] = useState(false);
   const [isTransakOpen, setIsTransakOpen] = useState(false);
   const [showQrCode, setShowQrCode] = useState(false);
   const transakInstance = useRef<any>(null);
 
-  useEffect(() => {
-    if (!isConnected) {
-      connect(true);
-    }
-  }, [isConnected]);
+  // useEffect(() => {
+  //   if (!isConnected) {
+  //     connect(true);
+  //   }
+  // }, [isConnected]);
 
-  useEffect(() => {
-    // Load Transak script
-    const script = document.createElement("script");
-    script.src = "https://global.transak.com/sdk/v1.1/widget.js";
-    script.async = true;
-    script.onload = () => setIsTransakLoaded(true);
-    document.body.appendChild(script);
+  // useEffect(() => {
+  //   // Load Transak script
+  //   const script = document.createElement("script");
+  //   script.src = "https://global.transak.com/sdk/v1.1/widget.js";
+  //   script.async = true;
+  //   script.onload = () => setIsTransakLoaded(true);
+  //   document.body.appendChild(script);
 
-    return () => {
-      if (transakInstance.current) {
-        transakInstance.current.close();
-      }
-      document.body.removeChild(script);
-    };
+  //   return () => {
+  //     if (transakInstance.current) {
+  //       transakInstance.current.close();
+  //     }
+  //     document.body.removeChild(script);
+  //   };
 
-    // Check connection status
-  }, [isConnected, router, address]);
+  //   // Check connection status
+  // }, [isConnected, router, address]);
 
   const openTransak = () => {
     if (!isTransakLoaded || !address) {

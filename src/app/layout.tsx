@@ -29,7 +29,7 @@ export default async function RootLayout({
   const cookie = (await headers()).get("cookie") || null; // Handle null case
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <ProvidersConfig cookie={cookie}>{children}</ProvidersConfig>
       </body>
     </html>
